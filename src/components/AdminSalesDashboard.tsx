@@ -662,6 +662,29 @@ export const AdminSalesDashboard: React.FC = () => {
     }
   };
 
+  // Solo staff de plataforma: datos globales de todos los vendedores.
+  // Vendedores → Mi Tienda (estadísticas propias). Compradores → catálogo.
+  if (!isOwner) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-16 text-center">
+        <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto mb-4">
+          <ShieldCheck className="w-7 h-7" />
+        </div>
+        <h1 className="text-2xl font-extrabold text-slate-900 font-display">Zona restringida</h1>
+        <p className="text-sm text-slate-500 mt-2">
+          Este panel es del equipo SoloOutlet. Como {isSellerUser ? 'vendedor' : 'comprador'} tu lugar es {isSellerUser ? 'tu tienda' : 'el catálogo'}.
+        </p>
+        <button
+          onClick={() => setCurrentView(isSellerUser ? 'seller-workspace' : 'catalog')}
+          className="mt-6 inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#004AC6] text-white font-bold text-sm hover:bg-[#1D4ED8] cursor-pointer"
+        >
+          {isSellerUser && <Store className="w-4 h-4" />}
+          <span>{isSellerUser ? 'Ir a Mi Tienda' : 'Explorar catálogo'}</span>
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 

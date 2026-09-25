@@ -112,16 +112,18 @@ export const Navbar: React.FC = () => {
             </button>
           )}
 
-          <button
-            onClick={() => setCurrentView('admin')}
-            className={linkCls(currentView === 'admin')}
-            title="Estadísticas de ventas, facturación y stock"
-          >
-            <span className="inline-flex items-center gap-1.5">
-              <TrendingUp className="w-4 h-4 text-emerald-600" />
-              <span>Estadísticas de Ventas</span>
-            </span>
-          </button>
+          {owner && (
+            <button
+              onClick={() => setCurrentView('admin')}
+              className={linkCls(currentView === 'admin')}
+              title="Estadísticas de ventas, facturación y stock"
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <TrendingUp className="w-4 h-4 text-emerald-600" />
+                <span>Estadísticas de Ventas</span>
+              </span>
+            </button>
+          )}
         </nav>
 
         {/* Actions */}
@@ -207,21 +209,21 @@ export const Navbar: React.FC = () => {
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Tags:</span>
           <button
             onClick={() => {
-              setSelectedCategoryFilter('Electro');
+              setSelectedCategoryFilter('Tecnología');
               setCurrentView('catalog');
             }}
             className="cond-pill px-3 py-1.5 rounded-full text-[11px] font-bold cursor-pointer bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100"
           >
-            ⚡ Electro
+            ⚡ Tecnología
           </button>
           <button
             onClick={() => {
-              setSelectedCategoryFilter('Ropa');
+              setSelectedCategoryFilter('Indumentaria');
               setCurrentView('catalog');
             }}
             className="cond-pill px-3 py-1.5 rounded-full text-[11px] font-bold cursor-pointer bg-violet-50 text-violet-800 border border-violet-200 hover:bg-violet-100"
           >
-            👕 Ropa
+            👕 Indumentaria
           </button>
           <button
             onClick={() => {

@@ -11,14 +11,14 @@ los datos viven en `localStorage` a través de una capa lista para migrar a API)
 ## Puesta en marcha (cualquier editor)
 
 ```bash
-npm install --legacy-peer-deps
-npm run dev      # http://localhost:3000
-npm run build    # genera dist/
-npm run lint     # tsc --noEmit
+bun install
+bun run dev      # http://localhost:3000
+bun run build    # genera dist/
+bun run lint     # tsc --noEmit
 ```
 
-> El flag `--legacy-peer-deps` es por un conflicto pianificado entre
-> `vite@8` y `esbuild` (ver `package.json`: `esbuild ^0.28.2`).
+> Alternativa con npm: `npm install --legacy-peer-deps` (flag necesario por
+> un conflicto entre `vite@8` y `esbuild`; ver `package.json`: `esbuild ^0.28.2`).
 
 ## Roles
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { formatPrice } from '../utils/formatters';
-import { canAccessModule, roleLabel, SELLER_ROLES, INTEGRATION_CATALOG, WorkspaceModule } from '../utils/sellerWorkspace';
+import { canAccessModule, roleLabel, SELLER_ROLES, INTEGRATION_CATALOG, WorkspaceModule, isPlatformOwner } from '../utils/sellerWorkspace';
 import { SellerRole, Order } from '../types';
 import {
   Store, Users, Megaphone, Plug, Wallet, Plus, Pause, Play,
@@ -235,14 +235,16 @@ export const SellerWorkspace: React.FC = () => {
                   Estadísticas de Ventas y Liquidación
                 </h3>
               </div>
-              <button
-                onClick={() => setCurrentView('admin')}
-                className="px-4 py-2 rounded-xl bg-[#004AC6] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-colors cursor-pointer inline-flex items-center gap-1.5 shadow-xs self-start sm:self-auto"
-              >
-                <BarChart3 className="w-4 h-4" />
-                <span>Ver Centro Global de Analíticas</span>
-                <ArrowUpRight className="w-3.5 h-3.5" />
-              </button>
+              {isPlatformOwner(currentUser) && (
+                <button
+                  onClick={() => setCurrentView('admin')}
+                  className="px-4 py-2 rounded-xl bg-[#004AC6] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-colors cursor-pointer inline-flex items-center gap-1.5 shadow-xs self-start sm:self-auto"
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  <span>Ver Centro Global de Analíticas</span>
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
             {/* KPI Cards for Seller */}
