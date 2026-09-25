@@ -1,7 +1,7 @@
 import React from 'react';
 import { useStore } from '../context/StoreContext';
 import { isMerchant, isPlatformOwner } from '../utils/sellerWorkspace';
-import { Package, ShoppingBag, LayoutDashboard, Heart, LogIn, PackagePlus, Store } from 'lucide-react';
+import { Package, ShoppingBag, LayoutDashboard, Heart, LogIn, PackagePlus, Store, TrendingUp, BarChart3 } from 'lucide-react';
 import { NotificationBell } from './NotificationBell';
 
 const GRADE_PILLS = [
@@ -112,16 +112,16 @@ export const Navbar: React.FC = () => {
             </button>
           )}
 
-          {owner && (
-            <button
-              onClick={() => setCurrentView('admin')}
-              className={linkCls(currentView === 'admin')}
-            >
-              <span className="inline-flex items-center gap-1.5">
-                <LayoutDashboard className="w-4 h-4 text-slate-400" /> Admin
-              </span>
-            </button>
-          )}
+          <button
+            onClick={() => setCurrentView('admin')}
+            className={linkCls(currentView === 'admin')}
+            title="Estadísticas de ventas, facturación y stock"
+          >
+            <span className="inline-flex items-center gap-1.5">
+              <TrendingUp className="w-4 h-4 text-emerald-600" />
+              <span>Estadísticas de Ventas</span>
+            </span>
+          </button>
         </nav>
 
         {/* Actions */}
@@ -203,11 +203,43 @@ export const Navbar: React.FC = () => {
               </button>
             );
           })}
+          <div className="h-4 w-px bg-slate-200 mx-1 shrink-0" />
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Tags:</span>
           <button
-            onClick={() => setCurrentView('catalog')}
+            onClick={() => {
+              setSelectedCategoryFilter('Electro');
+              setCurrentView('catalog');
+            }}
+            className="cond-pill px-3 py-1.5 rounded-full text-[11px] font-bold cursor-pointer bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100"
+          >
+            ⚡ Electro
+          </button>
+          <button
+            onClick={() => {
+              setSelectedCategoryFilter('Ropa');
+              setCurrentView('catalog');
+            }}
+            className="cond-pill px-3 py-1.5 rounded-full text-[11px] font-bold cursor-pointer bg-violet-50 text-violet-800 border border-violet-200 hover:bg-violet-100"
+          >
+            👕 Ropa
+          </button>
+          <button
+            onClick={() => {
+              setSelectedCategoryFilter('Hogar');
+              setCurrentView('catalog');
+            }}
+            className="cond-pill px-3 py-1.5 rounded-full text-[11px] font-bold cursor-pointer bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100"
+          >
+            🏠 Hogar
+          </button>
+          <button
+            onClick={() => {
+              setSelectedCategoryFilter(null);
+              setCurrentView('catalog');
+            }}
             className="cond-pill px-3 py-1.5 rounded-full text-[11px] font-bold cursor-pointer bg-orange-100 text-orange-700 hover:bg-orange-200"
           >
-            ⚡ Rayos del Día
+            ⚡ Liquidaciones
           </button>
         </div>
       </div>

@@ -11,10 +11,30 @@ const DEFAULT_USER: User = {
   email: 'marianoagusting1996@gmail.com',
   phone: '11 5590-4421',
   address: 'Av. Libertador 2450, Piso 7A',
-  city: 'Buenos Aires (CABA)',
+  city: 'Buenos Aires (CABA - Palermo)',
   postalCode: '1425',
   role: 'buyer',
   createdAt: '2026-08-15',
+  addresses: [
+    {
+      id: 'addr-1',
+      label: 'Casa / Principal',
+      fullName: 'Mariano Agustín Gómez',
+      phone: '11 5590-4421',
+      address: 'Av. Libertador 2450, Piso 7A',
+      city: 'Buenos Aires (CABA - Palermo)',
+      postalCode: '1425',
+    },
+    {
+      id: 'addr-2',
+      label: 'Trabajo / Oficina',
+      fullName: 'Mariano Agustín Gómez',
+      phone: '11 5590-4421',
+      address: 'Av. Corrientes 1240, Piso 3',
+      city: 'CABA - Centro',
+      postalCode: '1001',
+    },
+  ],
 };
 
 const INITIAL_PRODUCT_CHATS: Record<string, ChatMessage[]> = {
@@ -175,8 +195,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Migración: órdenes viejas sin settlement reciben cálculo automático retroactivo
   const [orders, setOrders] = useState<Order[]>(() => {
-    const saved = load('solooutlet_orders', INITIAL_ORDERS);
-    return saved.map((o) => {
+    const saved = load('solooutlet_orders', [] as Order[]);
+    const source = saved.length >= INITIAL_ORDERS.length
+      ? saved
+      : [...saved, ...INITIAL_ORDERS.filter((io) => !saved.some((s) => s.id === io.id))];
+    const initialList = source.length > 0 ? source : INITIAL_ORDERS;
+    return initialList.map((o) => {
       if (o.settlement) return o;
       const settlement = calcSettlement(o.total, o.paymentDetails.method, COMMISSION_CONFIG.rate);
       return {

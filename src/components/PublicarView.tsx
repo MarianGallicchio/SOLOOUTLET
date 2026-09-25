@@ -205,6 +205,157 @@ const INCLUDED_OPTIONS = [
   'Factura de compra original',
 ];
 
+export interface FieldValidation {
+  isValid: boolean;
+  message: string;
+  type: 'success' | 'warning' | 'error';
+}
+
+export function validateTitle(title: string): FieldValidation {
+  const trimmed = title.trim();
+  if (trimmed.length === 0) {
+    return { isValid: false, message: 'El título es obligatorio.', type: 'error' };
+  }
+  if (trimmed.length < 5) {
+    return {
+      isValid: false,
+      message: `Título demasiado corto (faltan ${5 - trimmed.length} caracteres para el mínimo de 5).`,
+      type: 'warning',
+    };
+  }
+  if (trimmed.length > 120) {
+    return {
+      isValid: false,
+      message: `El título excede el límite máximo por ${trimmed.length - 120} caracteres.`,
+      type: 'error',
+    };
+  }
+  if (!/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/.test(trimmed)) {
+    return {
+      isValid: false,
+      message: 'El título debe incluir palabras o nombre descriptivo del producto.',
+      type: 'error',
+    };
+  }
+  if (trimmed.length < 10) {
+    return {
+      isValid: true,
+      message: 'Formato válido. Recomendado: incluir marca o modelo para mayor claridad.',
+      type: 'warning',
+    };
+  }
+  return {
+    isValid: true,
+    message: '✓ Título con formato óptimo y descriptivo.',
+    type: 'success',
+  };
+}
+
+export function validateGeneralDescription(desc: string): FieldValidation {
+  const trimmed = desc.trim();
+  const len = trimmed.length;
+  const words = trimmed.split(/\s+/).filter(Boolean);
+
+  if (len === 0) {
+    return { isValid: false, message: 'La descripción general es obligatoria.', type: 'error' };
+  }
+  if (len < 80) {
+    return {
+      isValid: false,
+      message: `Faltan ${80 - len} caracteres para alcanzar el mínimo requerido (80).`,
+      type: 'warning',
+    };
+  }
+  if (len > 600) {
+    return {
+      isValid: false,
+      message: `La descripción excede el límite permitido por ${len - 600} caracteres (máx. 600).`,
+      type: 'error',
+    };
+  }
+  if (words.length < 8) {
+    return {
+      isValid: false,
+      message: 'La descripción debe contener al menos 8 palabras con información técnica.',
+      type: 'warning',
+    };
+  }
+  return {
+    isValid: true,
+    message: '✓ Longitud y formato de descripción excelentes.',
+    type: 'success',
+  };
+}
+
+export function validateConditionDescription(desc: string): FieldValidation {
+  const trimmed = desc.trim();
+  const len = trimmed.length;
+
+  if (len === 0) {
+    return {
+      isValid: false,
+      message: 'El diagnóstico o detalle de la condición es obligatorio.',
+      type: 'error',
+    };
+  }
+  if (len < 10) {
+    return {
+      isValid: false,
+      message: `Faltan ${10 - len} caracteres para detallar el estado (mínimo 10).`,
+      type: 'warning',
+    };
+  }
+  return {
+    isValid: true,
+    message: '✓ Diagnóstico del estado detallado correctamente.',
+    type: 'success',
+  };
+}
+
+export function validatePrice(price: number, originalPrice: number) {
+  const isPValid = Number.isFinite(price) && price >= 500;
+  const isOValid = Number.isFinite(originalPrice) && originalPrice > 0;
+  const isDiscountValid = isPValid && isOValid && price < originalPrice;
+
+  let priceMessage = '';
+  if (!price || price <= 0) {
+    priceMessage = 'El precio de outlet debe ser mayor a $0.';
+  } else if (price < 500) {
+    priceMessage = 'El precio mínimo en la plataforma es de $500 ARS.';
+  } else if (isOValid && price >= originalPrice) {
+    priceMessage = 'El precio de outlet debe ser inferior al precio original.';
+  } else {
+    priceMessage = '✓ Precio de outlet válido.';
+  }
+
+  let originalMessage = '';
+  if (!originalPrice || originalPrice <= 0) {
+    originalMessage = 'Ingresá el precio original de lista de fábrica.';
+  } else if (isPValid && originalPrice <= price) {
+    originalMessage = 'Debe ser mayor al precio de outlet para reflejar el descuento.';
+  } else {
+    originalMessage = '✓ Precio de lista válido.';
+  }
+
+  let discountMessage = '';
+  if (isDiscountValid) {
+    const discount = Math.round(((originalPrice - price) / originalPrice) * 100);
+    const savings = originalPrice - price;
+    discountMessage = `✓ Descuento del ${discount}% OFF ($${savings.toLocaleString('es-AR')} de ahorro).`;
+  } else if (price >= originalPrice && originalPrice > 0) {
+    discountMessage = '⚠️ El precio de outlet debe ser menor al precio original de lista.';
+  }
+
+  return {
+    isPriceValid: isPValid,
+    isOriginalValid: isOValid,
+    isValid: isDiscountValid,
+    priceMessage,
+    originalMessage,
+    discountMessage,
+  };
+}
+
 interface FormState {
   // Step 1: Photos (record of slotId -> url)
   photos: Record<string, string>;
@@ -347,15 +498,20 @@ export const PublicarView: React.FC = () => {
   const hasDefectPhoto = !!form.photos['defect'];
   const isPhotosValid = photoCount >= 3 && photoCount <= 8 && hasMainPhoto && hasDefectPhoto;
 
-  // Step 2 validations
-  const isTitleValid = form.title.trim().length >= 5;
+  // Step 2 & 3 real-time format validations
+  const titleValidation = useMemo(() => validateTitle(form.title), [form.title]);
+  const generalDescValidation = useMemo(() => validateGeneralDescription(form.generalDescription), [form.generalDescription]);
+  const conditionDescValidation = useMemo(() => validateConditionDescription(form.conditionDescription), [form.conditionDescription]);
+  const priceValidation = useMemo(() => validatePrice(form.price, form.originalPrice), [form.price, form.originalPrice]);
+
+  const isTitleValid = titleValidation.isValid;
   const isBrandValid = form.brand.trim().length >= 2;
   const isModelValid = form.model.trim().length >= 2;
   const isCategoryValid = !!form.category;
   const isConditionValid = !!form.condition;
-  const isConditionDescValid = form.conditionDescription.trim().length >= 10;
+  const isConditionDescValid = conditionDescValidation.isValid;
   const charCount = form.generalDescription.trim().length;
-  const isDescLengthValid = charCount >= 80 && charCount <= 600;
+  const isDescLengthValid = generalDescValidation.isValid;
   const hasAtLeastOneIncluded = form.includedItems.length >= 1;
 
   // Checklist for Step 2 General Description
@@ -377,7 +533,7 @@ export const PublicarView: React.FC = () => {
     hasAtLeastOneIncluded;
 
   // Step 3 Price & Calculations
-  const isPriceValid = form.price > 0 && form.originalPrice > 0 && form.price < form.originalPrice;
+  const isPriceValid = priceValidation.isValid;
   const discountPercent = form.originalPrice > form.price
     ? Math.round(((form.originalPrice - form.price) / form.originalPrice) * 100)
     : 0;
@@ -407,29 +563,40 @@ export const PublicarView: React.FC = () => {
   // Checklist for Step 4 Confirmation
   const checklist = [
     {
-      label: 'Fotos cargadas (mínimo 3, incluyendo foto del defecto/condición)',
+      label: 'Fotos reales cargadas (mínimo 3, incluyendo foto del defecto/condición)',
       ok: isPhotosValid,
       step: 1,
+      detail: `${photoCount}/8 fotos cargadas`,
     },
     {
-      label: 'Estado declarado con descripción detallada',
+      label: 'Título con formato válido (mín. 5 caracteres con nombre de producto)',
+      ok: isTitleValid,
+      step: 2,
+      detail: titleValidation.message,
+    },
+    {
+      label: 'Estado declarado con diagnóstico detallado (mín. 10 caracteres)',
       ok: isConditionValid && isConditionDescValid,
       step: 2,
+      detail: conditionDescValidation.message,
     },
     {
-      label: 'Precio de outlet menor al precio original de lista',
-      ok: isPriceValid,
-      step: 3,
-    },
-    {
-      label: 'Descripción completa (entre 80 y 600 caracteres)',
+      label: 'Descripción general completa (entre 80 y 600 caracteres con contenido técnico)',
       ok: isDescLengthValid,
       step: 2,
+      detail: generalDescValidation.message,
+    },
+    {
+      label: 'Precio de outlet menor al precio original con descuento real',
+      ok: isPriceValid,
+      step: 3,
+      detail: priceValidation.discountMessage || priceValidation.priceMessage,
     },
     {
       label: 'Al menos un detalle de qué incluye la venta',
       ok: hasAtLeastOneIncluded,
       step: 2,
+      detail: `${form.includedItems.length} componente(s) declarado(s)`,
     },
   ];
 

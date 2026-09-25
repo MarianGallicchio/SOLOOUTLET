@@ -18,6 +18,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     conditionDetails: 'Devolución dentro de los 10 días de compra por cliente que cambió de color. Equipo probado en banco de diagnóstico, batería con 2 ciclos y pantalla 100% impecable. Caja original con sellos abiertos.',
     warrantyDays: 90,
     specs: ['Intel Core i5 11va Gen', '8GB RAM DDR4', '256GB SSD NVMe', 'Pantalla 14" Full HD IPS', 'Windows 11 Home'],
+    tags: ['Electro', 'Tecnología', 'Informática'],
     isFeatured: true,
     createdAt: '2026-09-24',
     rating: 4.9,
@@ -63,6 +64,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     conditionDetails: 'Pequeño micro-rayón cosmético de 1.5cm en la parte trasera del marco de plástico (no visible de frente). El panel LED está impoluto sin píxeles muertos. Control remoto y base metálica nuevos.',
     warrantyDays: 60,
     specs: ['Resolución 4K Ultra HD (3840x2160)', 'HDR10+ y Dolby Digital Plus', '3x HDMI 2.1, 2x USB', 'Wi-Fi 5GHz & Bluetooth 5.0'],
+    tags: ['Electro', 'Tecnología', 'Hogar', 'TV & Video'],
     isFeatured: true,
     createdAt: '2026-09-24',
     rating: 4.8,
@@ -97,6 +99,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     conditionDetails: 'Producto de exhibición de sucursal. No cuenta con la caja de cartón de fábrica; se entrega en embalaje acolchado de seguridad reforzado. Incluye porta filtro doble, cuchara dosificadora y prensa.',
     warrantyDays: 90,
     specs: ['Presión 15 bares bomba italiana', 'Tanque removible 1.5L', 'Tubo vaporizador para capuchinos', 'Bandeja antigoteo en acero inoxidable'],
+    tags: ['Electro', 'Electrodomésticos', 'Hogar', 'Café & Cocina'],
     isFeatured: true,
     createdAt: '2026-09-23',
     rating: 5.0,
@@ -131,6 +134,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     conditionDetails: 'Falla menor identificada: El botón físico de volumen (+) tiene respuesta algo dura, pero el control touch y mediante la app de celular funciona de manera perfecta. Audio y cancelación activa de ruido (ANC) impecables.',
     warrantyDays: 30,
     specs: ['Cancelación activa de ruido híbrida -35dB', 'Batería hasta 40 horas', 'Drivers de 40mm de titanio', 'Modo transparencia ambiental'],
+    tags: ['Electro', 'Tecnología', 'Audio'],
     isFeatured: true,
     createdAt: '2026-09-22',
     rating: 4.7,
@@ -165,6 +169,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     conditionDetails: 'Devuelto por error de tamaño de habitación del cliente. Ya ensamblado y verificado en nuestro taller. Mecanismo hidráulico clase 4 sin uso, apoyabrazos 3D y almohadillas lumbares completas.',
     warrantyDays: 60,
     specs: ['Estructura de acero reforzado', 'Espuma inyectada de alta densidad', 'Pistón a gas clase 4 soporta hasta 140kg', 'Reclinación de 90° a 180°'],
+    tags: ['Hogar', 'Gaming', 'Muebles', 'Oficina'],
     isFeatured: false,
     createdAt: '2026-09-21',
     rating: 4.8,
@@ -199,6 +204,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     conditionDetails: 'Calzado nuevo a estrenar pero sin caja original debido a daño en el depósito durante la descarga del flete. Suela 100% limpia sin pisada, plantilla OrthoLite intacta.',
     warrantyDays: 30,
     specs: ['Talle: 42 AR (9.5 US / 27.5 cm)', 'Malla transpirable jacquard', 'Mediasuela de espuma reactiva', 'Suela de caucho antideslizante'],
+    tags: ['Ropa', 'Deportes', 'Calzado'],
     isFeatured: false,
     createdAt: '2026-09-23',
   },
@@ -218,6 +224,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     conditionDetails: 'Reacondicionado oficial de fábrica. Se reemplazó el conector USB-C por uno nuevo original. Pasa pruebas de rendimiento y batería al 98% de vida útil. Garantía oficial de 6 meses.',
     warrantyDays: 180,
     specs: ['Pantalla IPS 10.1 pulgadas 1920x1200', 'Procesador Octa-Core 2.0 GHz', '4GB RAM + 64GB expandible a 512GB', 'Batería 6000 mAh larga duración'],
+    tags: ['Electro', 'Tecnología', 'Tablets'],
     isFeatured: false,
     createdAt: '2026-09-20',
   },
@@ -237,6 +244,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     conditionDetails: 'Leve marca de roce superficial en el puño izquierdo producida durante el transporte de depósito. La membrana impermeable exterior y las costuras termoselladas están 100% selladas e intactas.',
     warrantyDays: 30,
     specs: ['Impermeabilidad 10.000 mm columna de agua', 'Respirabilidad 8.000 g/m2/24h', 'Capucha desmontable ajustable', 'Cierres YKK estancos'],
+    tags: ['Ropa', 'Indumentaria', 'Moda', 'Abrigo'],
     isFeatured: false,
     createdAt: '2026-09-19',
   },
@@ -256,6 +264,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     conditionDetails: 'Unidad de service oficial con motor de succión reemplazado por pieza nueva original de fábrica. Rodillos y cepillos laterales 100% nuevos en su blíster sellado.',
     warrantyDays: 120,
     specs: ['Navegación láser LiDAR 360°', 'Potencia de succión 4000 Pa', 'Función aspirado y trapeado simultáneo', 'Control por App WiFi y comando de voz'],
+    tags: ['Electro', 'Electrodomésticos', 'Hogar', 'Limpieza'],
     isFeatured: false,
     createdAt: '2026-09-18',
   },
@@ -275,12 +284,80 @@ export const INITIAL_PRODUCTS: Product[] = [
     conditionDetails: 'Sobrante de stock corporativo sin envoltorio comercial externo. Se entrega con cable trenzado tipo C nuevo y correa de transporte original.',
     warrantyDays: 60,
     specs: ['Potencia 20W RMS con radiadores pasivos', 'Certificación IPX7 sumergible 1m', 'Autonomía 14 horas de reproducción', 'Función TWS para emparejar 2 parlantes'],
+    tags: ['Electro', 'Tecnología', 'Audio'],
     isFeatured: false,
     createdAt: '2026-09-24',
   }
 ];
 
 export const INITIAL_ORDERS: Order[] = [
+  {
+    id: 'ord-100',
+    orderNumber: 'SO-8923',
+    date: '2026-09-25 10:14',
+    customer: {
+      fullName: 'Mariano Agustín Gómez',
+      email: 'marianoagusting1996@gmail.com',
+      phone: '11 5590-4421',
+      address: 'Av. Libertador 2450, Piso 7A',
+      city: 'Buenos Aires (CABA - Palermo)',
+      postalCode: '1425',
+    },
+    items: [
+      {
+        product: INITIAL_PRODUCTS[0],
+        quantity: 1,
+        unitPrice: 389999,
+      },
+      {
+        product: INITIAL_PRODUCTS[3],
+        quantity: 1,
+        unitPrice: 44999,
+      }
+    ],
+    subtotal: 434998,
+    discountAmount: 0,
+    shipping: 0,
+    total: 434998,
+    paymentDetails: {
+      method: 'mercadopago',
+      mpTransactionId: 'MP-994182941',
+    },
+    status: 'en_preparacion',
+    sellerName: 'ElectroPlaza Outlet',
+  },
+  {
+    id: 'ord-100b',
+    orderNumber: 'SO-8922',
+    date: '2026-09-25 08:30',
+    customer: {
+      fullName: 'Gonzalo Fernández',
+      email: 'gonza.fer@gmail.com',
+      phone: '11 4981-2244',
+      address: 'Cabildo 1820, Piso 2',
+      city: 'CABA - Belgrano',
+      postalCode: '1428',
+    },
+    items: [
+      {
+        product: INITIAL_PRODUCTS[7],
+        quantity: 1,
+        unitPrice: 189900,
+      }
+    ],
+    subtotal: 189900,
+    discountAmount: 0,
+    shipping: 0,
+    total: 189900,
+    paymentDetails: {
+      method: 'credit_card',
+      cardLast4: '3819',
+      installments: 6,
+      installmentAmount: 31650,
+    },
+    status: 'en_preparacion',
+    sellerName: 'GamingPoint Outlet',
+  },
   {
     id: 'ord-101',
     orderNumber: 'SO-8921',
@@ -290,7 +367,7 @@ export const INITIAL_ORDERS: Order[] = [
       email: 'lucas.benitez@gmail.com',
       phone: '11 4829-3301',
       address: 'Av. Corrientes 3421, Piso 4B',
-      city: 'CABA',
+      city: 'CABA - Almagro',
       postalCode: '1193',
     },
     items: [
@@ -308,7 +385,8 @@ export const INITIAL_ORDERS: Order[] = [
       method: 'mercadopago',
       mpTransactionId: 'MP-948271829',
     },
-    status: 'en_preparacion',
+    status: 'despachado',
+    sellerName: 'ElectroPlaza Outlet',
   },
   {
     id: 'ord-102',
@@ -329,27 +407,28 @@ export const INITIAL_ORDERS: Order[] = [
         unitPrice: 94999,
       },
       {
-        product: INITIAL_PRODUCTS[3],
+        product: INITIAL_PRODUCTS[4],
         quantity: 1,
-        unitPrice: 44999,
+        unitPrice: 59999,
       }
     ],
-    subtotal: 139998,
+    subtotal: 154998,
     discountAmount: 0,
     shipping: 0,
-    total: 139998,
+    total: 154998,
     paymentDetails: {
       method: 'credit_card',
       cardLast4: '4892',
       installments: 3,
-      installmentAmount: 46666,
+      installmentAmount: 51666,
     },
     status: 'completado',
+    sellerName: 'Hogar & Confort Outlet',
   },
   {
     id: 'ord-103',
     orderNumber: 'SO-8919',
-    date: '2026-09-24 09:22',
+    date: '2026-09-23 09:22',
     customer: {
       fullName: 'Esteban Quispe',
       email: 'esteban.q@outlook.com',
@@ -361,24 +440,30 @@ export const INITIAL_ORDERS: Order[] = [
     items: [
       {
         product: INITIAL_PRODUCTS[5],
-        quantity: 1,
+        quantity: 2,
         unitPrice: 29999,
+      },
+      {
+        product: INITIAL_PRODUCTS[6],
+        quantity: 1,
+        unitPrice: 48500,
       }
     ],
-    subtotal: 29999,
-    discountAmount: 2999, // 10% debin bonus
+    subtotal: 108498,
+    discountAmount: 10849, // 10% debin bonus
     shipping: 0,
-    total: 27000,
+    total: 97649,
     paymentDetails: {
       method: 'transfer',
       bankAlias: 'SOLO.OUTLET.PAGO',
     },
     status: 'despachado',
+    sellerName: 'StyleOutlet Deportes',
   },
   {
     id: 'ord-104',
     orderNumber: 'SO-8918',
-    date: '2026-09-23 18:30',
+    date: '2026-09-22 18:30',
     customer: {
       fullName: 'Valeria Gómez',
       email: 'valeriagomez@gmail.com',
@@ -402,6 +487,388 @@ export const INITIAL_ORDERS: Order[] = [
       method: 'debit_card',
       cardLast4: '9012',
     },
-    status: 'despachado',
+    status: 'completado',
+    sellerName: 'ElectroPlaza Outlet',
+  },
+  {
+    id: 'ord-105',
+    orderNumber: 'SO-8917',
+    date: '2026-09-21 16:10',
+    customer: {
+      fullName: 'Martín Soria',
+      email: 'soria.martin@hotmail.com',
+      phone: '261 440-1920',
+      address: 'San Martín 1040',
+      city: 'Mendoza Capital',
+      postalCode: '5500',
+    },
+    items: [
+      {
+        product: INITIAL_PRODUCTS[8],
+        quantity: 1,
+        unitPrice: 210000,
+      }
+    ],
+    subtotal: 210000,
+    discountAmount: 0,
+    shipping: 0,
+    total: 210000,
+    paymentDetails: {
+      method: 'mercadopago',
+      mpTransactionId: 'MP-892019482',
+    },
+    status: 'completado',
+    sellerName: 'CleanTech Outlet',
+  },
+  {
+    id: 'ord-106',
+    orderNumber: 'SO-8916',
+    date: '2026-09-20 12:45',
+    customer: {
+      fullName: 'Luciana Morales',
+      email: 'luciana.mora@gmail.com',
+      phone: '11 5110-3392',
+      address: 'Maipú 620, Piso 5',
+      city: 'Vicente López',
+      postalCode: '1638',
+    },
+    items: [
+      {
+        product: INITIAL_PRODUCTS[9],
+        quantity: 2,
+        unitPrice: 36500,
+      }
+    ],
+    subtotal: 73000,
+    discountAmount: 7300,
+    shipping: 0,
+    total: 65700,
+    paymentDetails: {
+      method: 'transfer',
+      bankAlias: 'SOLO.OUTLET.PAGO',
+    },
+    status: 'completado',
+    sellerName: 'TechStore Outlet',
+  },
+  {
+    id: 'ord-107',
+    orderNumber: 'SO-8915',
+    date: '2026-09-18 19:20',
+    customer: {
+      fullName: 'Rodrigo Acuña',
+      email: 'rodrigo.acuna@gmail.com',
+      phone: '223 581-2299',
+      address: 'Güemes 2840',
+      city: 'Mar del Plata',
+      postalCode: '7600',
+    },
+    items: [
+      {
+        product: INITIAL_PRODUCTS[0],
+        quantity: 1,
+        unitPrice: 389999,
+      }
+    ],
+    subtotal: 389999,
+    discountAmount: 0,
+    shipping: 0,
+    total: 389999,
+    paymentDetails: {
+      method: 'credit_card',
+      cardLast4: '7721',
+      installments: 3,
+      installmentAmount: 129999,
+    },
+    status: 'completado',
+    sellerName: 'ElectroPlaza Outlet',
+  },
+  {
+    id: 'ord-108',
+    orderNumber: 'SO-8914',
+    date: '2026-09-15 14:10',
+    customer: {
+      fullName: 'Florencia Domínguez',
+      email: 'flor.dominguez@live.com',
+      phone: '11 3912-8840',
+      address: 'Alvear 1420',
+      city: 'San Isidro',
+      postalCode: '1642',
+    },
+    items: [
+      {
+        product: INITIAL_PRODUCTS[1],
+        quantity: 1,
+        unitPrice: 329999,
+      },
+      {
+        product: INITIAL_PRODUCTS[9],
+        quantity: 1,
+        unitPrice: 36500,
+      }
+    ],
+    subtotal: 366499,
+    discountAmount: 0,
+    shipping: 0,
+    total: 366499,
+    paymentDetails: {
+      method: 'mercadopago',
+      mpTransactionId: 'MP-817290123',
+    },
+    status: 'completado',
+    sellerName: 'ElectroPlaza Outlet',
+  },
+  {
+    id: 'ord-109',
+    orderNumber: 'SO-8913',
+    date: '2026-09-10 11:35',
+    customer: {
+      fullName: 'Ignacio Peralta',
+      email: 'iperalta@gmail.com',
+      phone: '381 499-1029',
+      address: '25 de Mayo 450',
+      city: 'San Miguel de Tucumán',
+      postalCode: '4000',
+    },
+    items: [
+      {
+        product: INITIAL_PRODUCTS[7],
+        quantity: 1,
+        unitPrice: 189900,
+      }
+    ],
+    subtotal: 189900,
+    discountAmount: 0,
+    shipping: 0,
+    total: 189900,
+    paymentDetails: {
+      method: 'debit_card',
+      cardLast4: '4190',
+    },
+    status: 'completado',
+    sellerName: 'GamingPoint Outlet',
+  },
+  {
+    id: 'ord-100',
+    orderNumber: 'SO-8912',
+    date: '2026-08-24 15:00',
+    customer: {
+      fullName: 'Sebastián Barrientos',
+      email: 'sbarrientos@gmail.com',
+      phone: '11 4982-1144',
+      address: 'Arenales 1890',
+      city: 'CABA - Recoleta',
+      postalCode: '1124',
+    },
+    items: [
+      {
+        product: INITIAL_PRODUCTS[3],
+        quantity: 1,
+        unitPrice: 79999,
+      }
+    ],
+    subtotal: 79999,
+    discountAmount: 0,
+    shipping: 0,
+    total: 79999,
+    paymentDetails: {
+      method: 'mercadopago',
+      mpTransactionId: 'MP-778811223',
+    },
+    status: 'completado',
+    sellerName: 'StyleOutlet Deportes',
+  },
+  {
+    id: 'ord-094',
+    orderNumber: 'SO-8911',
+    date: '2026-08-21 17:30',
+    customer: {
+      fullName: 'Guillermo Paz',
+      email: 'gpaz.arq@gmail.com',
+      phone: '11 6721-3944',
+      address: 'Av. Libertador 2200',
+      city: 'Vicente López',
+      postalCode: '1638',
+    },
+    items: [
+      {
+        product: INITIAL_PRODUCTS[1],
+        quantity: 1,
+        unitPrice: 329999,
+      }
+    ],
+    subtotal: 329999,
+    discountAmount: 0,
+    shipping: 0,
+    total: 329999,
+    paymentDetails: {
+      method: 'credit_card',
+      cardLast4: '5512',
+      installments: 3,
+      installmentAmount: 109999,
+    },
+    status: 'completado',
+    sellerName: 'ElectroPlaza Outlet',
+  },
+  {
+    id: 'ord-095',
+    orderNumber: 'SO-8910',
+    date: '2026-08-16 13:45',
+    customer: {
+      fullName: 'Mariana Quiroga',
+      email: 'marian.quiroga@yahoo.com',
+      phone: '351 611-9022',
+      address: 'Chacabuco 420',
+      city: 'Córdoba Capital',
+      postalCode: '5000',
+    },
+    items: [
+      {
+        product: INITIAL_PRODUCTS[2],
+        quantity: 1,
+        unitPrice: 94999,
+      },
+      {
+        product: INITIAL_PRODUCTS[4],
+        quantity: 1,
+        unitPrice: 59999,
+      }
+    ],
+    subtotal: 154998,
+    discountAmount: 0,
+    shipping: 0,
+    total: 154998,
+    paymentDetails: {
+      method: 'mercadopago',
+      mpTransactionId: 'MP-662288114',
+    },
+    status: 'completado',
+    sellerName: 'Hogar & Confort Outlet',
+  },
+  {
+    id: 'ord-096',
+    orderNumber: 'SO-8909',
+    date: '2026-08-12 10:20',
+    customer: {
+      fullName: 'Fernando Castro',
+      email: 'fcastro.dev@outlook.com',
+      phone: '11 3829-0012',
+      address: 'Cabello 3120',
+      city: 'CABA - Palermo',
+      postalCode: '1425',
+    },
+    items: [
+      {
+        product: INITIAL_PRODUCTS[7],
+        quantity: 1,
+        unitPrice: 189900,
+      }
+    ],
+    subtotal: 189900,
+    discountAmount: 0,
+    shipping: 0,
+    total: 189900,
+    paymentDetails: {
+      method: 'debit_card',
+      cardLast4: '3819',
+    },
+    status: 'completado',
+    sellerName: 'GamingPoint Outlet',
+  },
+  {
+    id: 'ord-097',
+    orderNumber: 'SO-8908',
+    date: '2026-08-07 19:15',
+    customer: {
+      fullName: 'Beatriz Solari',
+      email: 'bsolari@gmail.com',
+      phone: '261 520-8831',
+      address: 'Mitre 780',
+      city: 'Mendoza Capital',
+      postalCode: '5500',
+    },
+    items: [
+      {
+        product: INITIAL_PRODUCTS[8],
+        quantity: 1,
+        unitPrice: 210000,
+      }
+    ],
+    subtotal: 210000,
+    discountAmount: 0,
+    shipping: 0,
+    total: 210000,
+    paymentDetails: {
+      method: 'transfer',
+      bankAlias: 'SOLO.OUTLET.PAGO',
+    },
+    status: 'completado',
+    sellerName: 'CleanTech Outlet',
+  },
+  {
+    id: 'ord-098',
+    orderNumber: 'SO-8907',
+    date: '2026-08-02 16:50',
+    customer: {
+      fullName: 'Alejandro Rossi',
+      email: 'arossi.negocios@gmail.com',
+      phone: '11 4110-9922',
+      address: 'Av. Santa Fe 3900',
+      city: 'CABA - Palermo',
+      postalCode: '1425',
+    },
+    items: [
+      {
+        product: INITIAL_PRODUCTS[0],
+        quantity: 1,
+        unitPrice: 389999,
+      },
+      {
+        product: INITIAL_PRODUCTS[9],
+        quantity: 1,
+        unitPrice: 36500,
+      }
+    ],
+    subtotal: 426499,
+    discountAmount: 0,
+    shipping: 0,
+    total: 426499,
+    paymentDetails: {
+      method: 'credit_card',
+      cardLast4: '9921',
+      installments: 6,
+      installmentAmount: 71083,
+    },
+    status: 'completado',
+    sellerName: 'ElectroPlaza Outlet',
+  },
+  {
+    id: 'ord-099',
+    orderNumber: 'SO-8906',
+    date: '2026-07-29 11:10',
+    customer: {
+      fullName: 'Gonzalo Navarro',
+      email: 'gnavarro@gmail.com',
+      phone: '341 480-1122',
+      address: 'Bv. Oroño 840',
+      city: 'Rosario',
+      postalCode: '2000',
+    },
+    items: [
+      {
+        product: INITIAL_PRODUCTS[1],
+        quantity: 1,
+        unitPrice: 329999,
+      }
+    ],
+    subtotal: 329999,
+    discountAmount: 0,
+    shipping: 0,
+    total: 329999,
+    paymentDetails: {
+      method: 'mercadopago',
+      mpTransactionId: 'MP-559922110',
+    },
+    status: 'completado',
+    sellerName: 'ElectroPlaza Outlet',
   }
 ];

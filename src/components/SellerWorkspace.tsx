@@ -6,7 +6,7 @@ import { SellerRole, Order } from '../types';
 import {
   Store, Users, Megaphone, Plug, Wallet, Plus, Pause, Play,
   Trash2, Power, Lock, ArrowRight, BadgeCheck, Package,
-  Truck, Minus, Edit2, Check, X, ShoppingBag,
+  Truck, Minus, Edit2, Check, X, ShoppingBag, TrendingUp, BarChart3, ArrowUpRight, DollarSign,
 } from 'lucide-react';
 
 /**
@@ -110,6 +110,7 @@ export const SellerWorkspace: React.FC = () => {
 
   const tabs: { key: WorkspaceModule; label: string; icon: React.ReactNode }[] = [
     { key: 'resumen', label: 'Resumen', icon: <Store className="w-4 h-4" /> },
+    { key: 'estadisticas', label: 'Estadísticas de Ventas', icon: <TrendingUp className="w-4 h-4" /> },
     { key: 'pedidos', label: `Pedidos (${myOrders.length})`, icon: <ShoppingBag className="w-4 h-4" /> },
     { key: 'stock', label: `Stock (${myProducts.length})`, icon: <Package className="w-4 h-4" /> },
     { key: 'empleados', label: `Equipo (${seller.members.length})`, icon: <Users className="w-4 h-4" /> },
@@ -219,6 +220,100 @@ export const SellerWorkspace: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* ESTADÍSTICAS DE VENTAS */}
+      {tab === 'estadisticas' && gated('estadisticas', (
+        <div className="space-y-6">
+          <div className="glass-panel-3d rounded-3xl p-6 sm:p-7 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 flex items-center gap-1.5">
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  <span>Métricas de Rendimiento · {seller.storeName}</span>
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mt-0.5">
+                  Estadísticas de Ventas y Liquidación
+                </h3>
+              </div>
+              <button
+                onClick={() => setCurrentView('admin')}
+                className="px-4 py-2 rounded-xl bg-[#004AC6] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-colors cursor-pointer inline-flex items-center gap-1.5 shadow-xs self-start sm:self-auto"
+              >
+                <BarChart3 className="w-4 h-4" />
+                <span>Ver Centro Global de Analíticas</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* KPI Cards for Seller */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-4 rounded-2xl bg-white/70 border border-slate-200/80 shadow-2xs">
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Facturación Bruta</div>
+                <div className="text-xl sm:text-2xl font-black text-slate-900 tabular-nums mt-1">
+                  {formatPrice(myOrders.reduce((s, o) => s + o.total, 0))}
+                </div>
+                <div className="text-[11px] text-emerald-600 font-bold mt-1">+14.2% este mes</div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white/70 border border-slate-200/80 shadow-2xs">
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Neto a Liquidar</div>
+                <div className="text-xl sm:text-2xl font-black text-slate-900 tabular-nums mt-1">
+                  {formatPrice(
+                    myOrders.reduce((s, o) => s + (o.settlement?.netPayout || Math.round(o.total * 0.935)), 0)
+                  )}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1">Deducida comisión ~6.5%</div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white/70 border border-slate-200/80 shadow-2xs">
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Pedidos Vendidos</div>
+                <div className="text-xl sm:text-2xl font-black text-slate-900 tabular-nums mt-1">
+                  {myOrders.length}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1">
+                  {myOrders.filter((o) => o.status === 'completado').length} entregados
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white/70 border border-slate-200/80 shadow-2xs">
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Ticket Promedio</div>
+                <div className="text-xl sm:text-2xl font-black text-slate-900 tabular-nums mt-1">
+                  {formatPrice(
+                    myOrders.length > 0
+                      ? Math.round(myOrders.reduce((s, o) => s + o.total, 0) / myOrders.length)
+                      : 0
+                  )}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1">Por comprador</div>
+              </div>
+            </div>
+
+            {/* Seller Best Selling Items */}
+            <div className="space-y-3 pt-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                Tus Productos con Mayor Salida
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {myProducts.slice(0, 3).map((p) => (
+                  <div key={p.id} className="p-3.5 rounded-2xl border border-slate-200 flex items-center gap-3">
+                    <img src={p.image} alt="" className="w-12 h-12 rounded-xl object-cover bg-slate-100 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="font-bold text-xs text-slate-900 truncate">{p.title}</div>
+                      <div className="text-[11px] text-blue-600 font-extrabold tabular-nums mt-0.5">
+                        {formatPrice(p.price)}
+                      </div>
+                      <div className="text-[10px] text-slate-400 mt-0.5">
+                        Stock remanente: <strong className="text-slate-700">{p.stock} u.</strong>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      ))}
 
       {/* PEDIDOS */}
       {tab === 'pedidos' && gated('pedidos', (

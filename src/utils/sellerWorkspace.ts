@@ -4,7 +4,7 @@ import { SellerRole, IntegrationKey, User } from '../types';
  * Dueños de plataforma (staff SoloOutlet). A futuro: tabla `roles` en la DB.
  * Agregá acá el email del administrador para ver el Panel Admin.
  */
-export const PLATFORM_OWNER_EMAILS: string[] = ['admin@solooutlet.com'];
+export const PLATFORM_OWNER_EMAILS: string[] = ['admin@solooutlet.com', 'marianoagusting1996@gmail.com'];
 
 /** ¿Es cuenta vendedora (tiene tienda aprobada)? */
 export function isMerchant(user: User | null): boolean {
@@ -32,6 +32,7 @@ export const SELLER_ROLES: { value: SellerRole; label: string; description: stri
 
 export type WorkspaceModule =
   | 'resumen'
+  | 'estadisticas'
   | 'pedidos'
   | 'stock'
   | 'empleados'
@@ -40,11 +41,11 @@ export type WorkspaceModule =
   | 'finanzas';
 
 const ROLE_MODULES: Record<SellerRole, WorkspaceModule[]> = {
-  owner: ['resumen', 'pedidos', 'stock', 'empleados', 'publicidad', 'integraciones', 'finanzas'],
-  admin: ['resumen', 'pedidos', 'stock', 'empleados', 'publicidad', 'integraciones', 'finanzas'],
-  ventas: ['resumen', 'pedidos'],
+  owner: ['resumen', 'estadisticas', 'pedidos', 'stock', 'empleados', 'publicidad', 'integraciones', 'finanzas'],
+  admin: ['resumen', 'estadisticas', 'pedidos', 'stock', 'empleados', 'publicidad', 'integraciones', 'finanzas'],
+  ventas: ['resumen', 'estadisticas', 'pedidos'],
   deposito: ['resumen', 'stock', 'pedidos'],
-  marketing: ['resumen', 'publicidad'],
+  marketing: ['resumen', 'estadisticas', 'publicidad'],
 };
 
 /** ¿Puede este rol ver/usar el módulo? */

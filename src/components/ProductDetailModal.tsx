@@ -257,8 +257,19 @@ export const ProductDetailModal: React.FC = () => {
             {/* Right Column: Information, Specs & Purchase */}
             <div className="md:col-span-6 p-6 sm:p-8 flex flex-col justify-between">
               <div>
-                <div className="text-xs font-bold uppercase tracking-wider text-blue-600 mb-1">
-                  {product.cat} · SKU: {product.sku}
+                <div className="flex flex-wrap items-center justify-between gap-1.5 mb-1">
+                  <div className="text-xs font-bold uppercase tracking-wider text-blue-600">
+                    {product.cat} · SKU: {product.sku}
+                  </div>
+                  {product.tags && product.tags.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1">
+                      {product.tags.map((tag) => (
+                        <span key={tag} className="text-2xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-900 leading-tight mb-2">

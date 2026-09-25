@@ -16,7 +16,9 @@ import {
   Smartphone,
   Copy,
   Check,
+  MapPin,
 } from 'lucide-react';
+import { DEFAULT_LOCATIONS, POPULAR_LOCATION_SHORTCUTS } from '../data/locations';
 
 export const CheckoutModal: React.FC = () => {
   const { cart, isCheckoutOpen, setIsCheckoutOpen, processCheckout, currentUser } = useStore();
@@ -205,15 +207,79 @@ export const CheckoutModal: React.FC = () => {
                   />
                 </div>
 
+                <div className="sm:col-span-2">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-blue-600" />
+                      <span>Localidad y Código Postal por defecto</span>
+                    </label>
+                    <span className="text-[10px] text-slate-400">Autocompleta Ciudad y CP</span>
+                  </div>
+                  <select
+                    onChange={(e) => {
+                      const loc = DEFAULT_LOCATIONS.find((l) => `${l.city} (${l.postalCode})` === e.target.value);
+                      if (loc) {
+                        setCustomer({ ...customer, city: loc.city, postalCode: loc.postalCode });
+                      }
+                    }}
+                    defaultValue=""
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/80 hover:bg-white focus:outline-none focus:border-blue-600 font-medium text-slate-700 cursor-pointer transition-colors"
+                  >
+                    <option value="" disabled>Seleccionar de la lista de localidades y CP…</option>
+                    {DEFAULT_LOCATIONS.map((loc) => (
+                      <option key={`${loc.city}-${loc.postalCode}`} value={`${loc.city} (${loc.postalCode})`}>
+                        {loc.city} · CP {loc.postalCode} ({loc.province})
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* Quick Shortcut Buttons for fast selection */}
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Frecuentes:</span>
+                    {POPULAR_LOCATION_SHORTCUTS.map((sc) => (
+                      <button
+                        key={sc.label}
+                        type="button"
+                        onClick={() => setCustomer({ ...customer, city: sc.city, postalCode: sc.postalCode })}
+                        className={`px-2 py-0.5 rounded-lg text-2xs font-semibold border transition-all cursor-pointer ${
+                          customer.postalCode === sc.postalCode
+                            ? 'bg-blue-600 border-blue-600 text-white shadow-2xs'
+                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                        }`}
+                      >
+                        {sc.label} <span className="opacity-70 font-mono">({sc.postalCode})</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 mb-1">Ciudad / Localidad *</label>
                   <input
                     type="text"
                     required
+                    list="checkout-localities-list"
                     value={customer.city}
-                    onChange={(e) => setCustomer({ ...customer, city: e.target.value })}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      // Detect if matches any preset to autofill postal code
+                      const matched = DEFAULT_LOCATIONS.find((l) => l.city.toLowerCase() === val.toLowerCase());
+                      if (matched) {
+                        setCustomer({ ...customer, city: matched.city, postalCode: matched.postalCode });
+                      } else {
+                        setCustomer({ ...customer, city: val });
+                      }
+                    }}
+                    placeholder="Ej: Buenos Aires (CABA - Palermo)"
                     className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600 font-medium"
                   />
+                  <datalist id="checkout-localities-list">
+                    {DEFAULT_LOCATIONS.map((loc) => (
+                      <option key={`dl-${loc.city}`} value={loc.city}>
+                        CP {loc.postalCode} - {loc.province}
+                      </option>
+                    ))}
+                  </datalist>
                 </div>
 
                 <div>
@@ -222,7 +288,16 @@ export const CheckoutModal: React.FC = () => {
                     type="text"
                     required
                     value={customer.postalCode}
-                    onChange={(e) => setCustomer({ ...customer, postalCode: e.target.value })}
+                    onChange={(e) => {
+                      const cp = e.target.value;
+                      const matched = DEFAULT_LOCATIONS.find((l) => l.postalCode === cp.trim());
+                      if (matched && !customer.city) {
+                        setCustomer({ ...customer, postalCode: cp, city: matched.city });
+                      } else {
+                        setCustomer({ ...customer, postalCode: cp });
+                      }
+                    }}
+                    placeholder="Ej: 1425"
                     className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600 font-medium"
                   />
                 </div>

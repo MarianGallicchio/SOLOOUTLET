@@ -22,7 +22,9 @@ import {
   Clock,
   Copy,
   Store,
+  TrendingUp,
 } from 'lucide-react';
+import { DEFAULT_LOCATIONS, POPULAR_LOCATION_SHORTCUTS } from '../data/locations';
 
 export const UserProfileView: React.FC = () => {
   const {
@@ -183,6 +185,15 @@ export const UserProfileView: React.FC = () => {
           >
             <MapPin className="w-4 h-4" />
             <span>Datos & Envío</span>
+          </button>
+
+          <button
+            onClick={() => setCurrentView('admin')}
+            className="px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80"
+            title="Ver estadísticas y analíticas de ventas"
+          >
+            <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Estadísticas de Ventas</span>
           </button>
         </div>
 
@@ -616,16 +627,56 @@ export const UserProfileView: React.FC = () => {
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600"
                 />
               </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 mb-1">Localidad y Código Postal sugerido</label>
+                <select
+                  onChange={(e) => {
+                    const loc = DEFAULT_LOCATIONS.find((l) => `${l.city} (${l.postalCode})` === e.target.value);
+                    if (loc) {
+                      setFormData({ ...formData, city: loc.city, postalCode: loc.postalCode });
+                    }
+                  }}
+                  defaultValue=""
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium text-slate-700 cursor-pointer focus:outline-none focus:border-blue-600 mb-2"
+                >
+                  <option value="" disabled>Seleccionar de la lista de localidades y CP de Argentina…</option>
+                  {DEFAULT_LOCATIONS.map((loc) => (
+                    <option key={`p-${loc.city}-${loc.postalCode}`} value={`${loc.city} (${loc.postalCode})`}>
+                      {loc.city} · CP {loc.postalCode} ({loc.province})
+                    </option>
+                  ))}
+                </select>
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {POPULAR_LOCATION_SHORTCUTS.slice(0, 4).map((sc) => (
+                    <button
+                      key={`p-sc-${sc.label}`}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, city: sc.city, postalCode: sc.postalCode })}
+                      className="px-2 py-0.5 rounded-lg text-2xs font-semibold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer"
+                    >
+                      {sc.label} ({sc.postalCode})
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-600 mb-1">Ciudad</label>
                   <input
                     type="text"
                     required
+                    list="user-localities-list"
                     value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600"
                   />
+                  <datalist id="user-localities-list">
+                    {DEFAULT_LOCATIONS.map((loc) => (
+                      <option key={`udl-${loc.city}`} value={loc.city}>
+                        CP {loc.postalCode} - {loc.province}
+                      </option>
+                    ))}
+                  </datalist>
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-slate-600 mb-1">Código Postal</label>
@@ -681,13 +732,32 @@ export const UserProfileView: React.FC = () => {
               </button>
             </div>
           ))}
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <input value={newAddr.label} onChange={(e) => setNewAddr({ ...newAddr, label: e.target.value })} placeholder="Etiqueta (Casa, Trabajo)" className="px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-[#004AC6]" />
-            <input value={newAddr.fullName} onChange={(e) => setNewAddr({ ...newAddr, fullName: e.target.value })} placeholder="Quien recibe" className="px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-[#004AC6]" />
-            <input value={newAddr.address} onChange={(e) => setNewAddr({ ...newAddr, address: e.target.value })} placeholder="Calle, número, piso" className="col-span-2 px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-[#004AC6]" />
-            <input value={newAddr.city} onChange={(e) => setNewAddr({ ...newAddr, city: e.target.value })} placeholder="Ciudad" className="px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-[#004AC6]" />
-            <input value={newAddr.postalCode} onChange={(e) => setNewAddr({ ...newAddr, postalCode: e.target.value })} placeholder="Código postal" className="px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-[#004AC6]" />
-            <input value={newAddr.phone} onChange={(e) => setNewAddr({ ...newAddr, phone: e.target.value })} placeholder="Teléfono" className="px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-[#004AC6]" />
+          <div className="space-y-2 text-xs">
+            <select
+              onChange={(e) => {
+                const loc = DEFAULT_LOCATIONS.find((l) => `${l.city} (${l.postalCode})` === e.target.value);
+                if (loc) {
+                  setNewAddr({ ...newAddr, city: loc.city, postalCode: loc.postalCode });
+                }
+              }}
+              defaultValue=""
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 font-medium cursor-pointer focus:outline-none focus:border-[#004AC6]"
+            >
+              <option value="" disabled>Elegir localidad y CP por defecto…</option>
+              {DEFAULT_LOCATIONS.map((loc) => (
+                <option key={`nb-${loc.city}-${loc.postalCode}`} value={`${loc.city} (${loc.postalCode})`}>
+                  {loc.city} · CP {loc.postalCode}
+                </option>
+              ))}
+            </select>
+            <div className="grid grid-cols-2 gap-2">
+              <input value={newAddr.label} onChange={(e) => setNewAddr({ ...newAddr, label: e.target.value })} placeholder="Etiqueta (Casa, Trabajo)" className="px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-[#004AC6]" />
+              <input value={newAddr.fullName} onChange={(e) => setNewAddr({ ...newAddr, fullName: e.target.value })} placeholder="Quien recibe" className="px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-[#004AC6]" />
+              <input value={newAddr.address} onChange={(e) => setNewAddr({ ...newAddr, address: e.target.value })} placeholder="Calle, número, piso" className="col-span-2 px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-[#004AC6]" />
+              <input value={newAddr.city} onChange={(e) => setNewAddr({ ...newAddr, city: e.target.value })} placeholder="Ciudad" className="px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-[#004AC6]" />
+              <input value={newAddr.postalCode} onChange={(e) => setNewAddr({ ...newAddr, postalCode: e.target.value })} placeholder="Código postal" className="px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-[#004AC6]" />
+              <input value={newAddr.phone} onChange={(e) => setNewAddr({ ...newAddr, phone: e.target.value })} placeholder="Teléfono" className="col-span-2 px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-[#004AC6]" />
+            </div>
           </div>
           <button
             onClick={() => {

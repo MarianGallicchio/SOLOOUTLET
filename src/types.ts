@@ -52,6 +52,7 @@ export interface Product {
   images?: string[];
   stock: number;
   conditionDetails: string;
+  description?: string;
   warrantyDays: number;
   specs: string[];
   isFeatured?: boolean;
@@ -65,6 +66,7 @@ export interface Product {
   serialNumber?: string;
   includes?: string[];
   boostType?: 'none' | 'basic' | 'premium';
+  tags?: string[];
 }
 
 export interface CartItem {
