@@ -1,0 +1,6 @@
+{
+  "name": "solooutlet — Marketplace de Outlet & Liquidación",
+  "description": "El mercado digital donde los comercios liquidan devoluciones, productos con fallas, sin caja o rayados con transparencia total, pagos con Mercado Pago y tarjetas, y gestión de stock en tiempo real.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
