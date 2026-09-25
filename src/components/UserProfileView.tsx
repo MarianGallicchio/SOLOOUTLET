@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useStore } from '../context/StoreContext';
 import { formatPrice, getConditionBadgeStyle } from '../utils/formatters';
-import { isMerchant, isPlatformOwner } from '../utils/sellerWorkspace';
+import { isMerchant } from '../utils/sellerWorkspace';
 import { Order, Product } from '../types';
 import {
   Package,
@@ -74,7 +74,7 @@ export const UserProfileView: React.FC = () => {
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
-    updateUserProfile(formData);
+    void updateUserProfile(formData);
     setIsEditing(false);
   };
 
@@ -187,16 +187,7 @@ export const UserProfileView: React.FC = () => {
             <span>Datos & Envío</span>
           </button>
 
-          {isPlatformOwner(currentUser) ? (
-            <button
-              onClick={() => setCurrentView('admin')}
-              className="px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80"
-              title="Ver estadísticas y analíticas de ventas"
-            >
-              <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Estadísticas de Ventas</span>
-            </button>
-          ) : isMerchant(currentUser) ? (
+          {isMerchant(currentUser) && (
             <button
               onClick={() => setCurrentView('seller-workspace')}
               className="px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80"
@@ -205,7 +196,7 @@ export const UserProfileView: React.FC = () => {
               <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
               <span>Estadísticas de Ventas</span>
             </button>
-          ) : null}
+          )}
         </div>
 
         <div className="flex items-center gap-2 pr-1 self-end sm:self-auto">

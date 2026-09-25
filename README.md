@@ -28,6 +28,19 @@ bun run lint     # tsc --noEmit
 | Vendedor (`merchant_approved`) | + Mi Tienda (pedidos, stock, equipo, publicidad, integraciones, finanzas), Publicar Lote | Admin global |
 | Staff (`PLATFORM_OWNER_EMAILS` en `src/utils/sellerWorkspace.ts`) | + Panel Admin (ventas, inventario, liquidaciones) | — |
 
+## Accesos (listos para DB)
+
+- Cuentas separadas por email: **comprador** (`buyer`) y **vendedor**
+  (`merchant_approved` + `storeName`). Un email puede ser empleado de una
+  tienda sin ser dueño (invitación por email + rol).
+- Todo el auth pasa por `src/data/auth.ts` (`login`, `registerBuyer`,
+  `registerSeller`, `updateUser`, `logout`, `restoreSession`) con sesión
+  persistida. Hoy usa `localStorage`; con `VITE_API_URL` habla a
+  `POST /auth/*`, `GET /auth/me` y `PATCH /users/me` sin tocar el resto.
+- Entradas: compradores por "Ingresar" (Navbar/móvil); vendedores por
+  "Acceso vendedores" (footer Comercios), pestaña comercio del AuthModal
+  o "Mi Tienda" una vez registrados.
+
 ## Estructura
 
 ```

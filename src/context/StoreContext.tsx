@@ -4,6 +4,7 @@ import { INITIAL_PRODUCTS, INITIAL_ORDERS } from '../data/mockData';
 import { calcSettlement, releaseDateFrom, COMMISSION_CONFIG, resolveCoupon, resolveShipping } from '../utils/commissions';
 import { DEFAULT_INTEGRATIONS } from '../utils/sellerWorkspace';
 import { load, persist, forget } from '../data/db';
+import { auth } from '../data/auth';
 
 const DEFAULT_USER: User = {
   id: 'usr-101',
@@ -134,11 +135,11 @@ interface StoreContextType {
   toggleWishlist: (productId: string) => void;
   isInWishlist: (productId: string) => boolean;
 
-  // User Profile & Authentication
+  // User Profile & Authentication (vía servicio `auth`, listo para DB)
   currentUser: User | null;
-  loginUser: (email: string, fullName?: string) => void;
-  logoutUser: () => void;
-  updateUserProfile: (updated: Partial<User>) => void;
+  loginUser: (email: string, fullName?: string, password?: string) => Promise<boolean>;
+  logoutUser: () => Promise<void>;
+  updateUserProfile: (updated: Partial<User>) => Promise<void>;
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (open: boolean) => void;
   authInitialTab: 'buyer' | 'merchant';
@@ -146,7 +147,7 @@ interface StoreContextType {
 
   // Merchant Onboarding & Contact
   merchantApplications: MerchantApplication[];
-  submitMerchantApplication: (data: Omit<MerchantApplication, 'id' | 'date' | 'status'>) => void;
+  submitMerchantApplication: (data: Omit<MerchantApplication, 'id' | 'date' | 'status'>) => Promise<void>;
 
   // In-product Live Merchant Chat
   productChats: Record<string, ChatMessage[]>;
@@ -472,32 +473,42 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsAuthModalOpen(true);
   };
 
-  const loginUser = (email: string, fullName = 'Comprador') => {
-    const user: User = {
-      id: `usr-${Date.now()}`,
-      fullName,
-      email,
-      phone: '11 5590-4421',
-      address: 'Av. Libertador 2450, Piso 7A',
-      city: 'Buenos Aires (CABA)',
-      postalCode: '1425',
-      role: 'buyer',
-      createdAt: new Date().toISOString().split('T')[0],
-    };
-    setCurrentUser(user);
-    setIsAuthModalOpen(false);
-    showToast(`✓ Bienvenido/a, ${user.fullName}`);
+  // Restaurar sesión guardada (cuentas separadas comprador/vendedor)
+  useEffect(() => {
+    auth.restoreSession().then((user) => {
+      if (user) setCurrentUser(user);
+    }).catch(() => {});
+  }, []);
+
+  const loginUser = async (email: string, fullName = 'Comprador', password?: string): Promise<boolean> => {
+    try {
+      const user = await auth.login(email, password, fullName);
+      setCurrentUser(user);
+      setIsAuthModalOpen(false);
+      showToast(`✓ Bienvenido/a, ${user.fullName}`);
+      return true;
+    } catch (e) {
+      showToast(`⚠️ ${e instanceof Error ? e.message : 'No pudimos iniciar sesión.'}`);
+      return false;
+    }
   };
 
-  const logoutUser = () => {
+  const logoutUser = async (): Promise<void> => {
+    await auth.logout();
     setCurrentUser(null);
     showToast('Sesión cerrada');
     setCurrentView('home');
   };
 
-  const updateUserProfile = (updated: Partial<User>) => {
+  const updateUserProfile = async (updated: Partial<User>): Promise<void> => {
     if (!currentUser) return;
-    setCurrentUser({ ...currentUser, ...updated });
+    const next = { ...currentUser, ...updated };
+    setCurrentUser(next);
+    try {
+      await auth.updateUser(next);
+    } catch {
+      /* el cambio queda en memoria y en caché local */
+    }
     showToast('✓ Datos de perfil actualizados');
   };
 
@@ -519,7 +530,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return wishlist.includes(productId);
   };
 
-  const submitMerchantApplication = (data: Omit<MerchantApplication, 'id' | 'date' | 'status'>) => {
+  const submitMerchantApplication = async (data: Omit<MerchantApplication, 'id' | 'date' | 'status'>): Promise<void> => {
     const newApp: MerchantApplication = {
       ...data,
       id: `app-${Date.now()}`,
@@ -527,11 +538,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       status: 'approved',
     };
     setMerchantApplications((prev) => [newApp, ...prev]);
+    // Cuenta VENDEDORA separada (por email): entra directo a su tienda
+    try {
+      const sellerUser = await auth.registerSeller({
+        fullName: data.contactPerson.trim() || data.storeName,
+        email: data.email,
+        storeName: data.storeName,
+      });
+      setCurrentUser(sellerUser);
+    } catch (e) {
+      showToast(`⚠️ ${e instanceof Error ? e.message : 'No pudimos crear tu cuenta vendedora.'}`);
+      return;
+    }
     // La tienda queda creada al instante: el comerciante ya puede operar su workspace
     createSellerWorkspace(data.storeName, data.email);
-    if (currentUser) {
-      setCurrentUser({ ...currentUser, role: 'merchant_approved', storeName: data.storeName });
-    }
     setIsAuthModalOpen(false);
     setCurrentView('seller-workspace');
     window.scrollTo({ top: 0, behavior: 'smooth' });

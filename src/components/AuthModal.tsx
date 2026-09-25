@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
+import { AUTH_PASSWORD_PLACEHOLDER } from '../data/auth';
 import { CategoryType } from '../types';
 import {
   X,
@@ -43,16 +44,17 @@ export const AuthModal: React.FC = () => {
 
   if (!isAuthModalOpen) return null;
 
-  const handleBuyerSubmit = (e: React.FormEvent) => {
+  const handleBuyerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!buyerEmail) return;
-    loginUser(buyerEmail, buyerName);
+    const pwd = buyerPassword === AUTH_PASSWORD_PLACEHOLDER ? undefined : buyerPassword;
+    await loginUser(buyerEmail, buyerName, pwd);
   };
 
-  const handleMerchantSubmit = (e: React.FormEvent) => {
+  const handleMerchantSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!merchantForm.storeName || !merchantForm.whatsapp) return;
-    submitMerchantApplication(merchantForm);
+    await submitMerchantApplication(merchantForm);
   };
 
   return (
@@ -226,7 +228,7 @@ export const AuthModal: React.FC = () => {
                 <span>Admisión Exclusiva para Comercios Verificados</span>
               </div>
               <p className="leading-relaxed text-amber-800">
-                Para garantizar la seguridad de los compradores y verificar la autenticidad del estado de las devoluciones o productos de outlet, <strong>todos los vendedores deben contactarse primero con nuestro equipo de admisiones</strong> antes de recibir acceso para publicar stock.
+                La cuenta vendedora es <strong>separada de la de comprador</strong> y se crea al instante con el email de tu comercio: accedés a tu panel con pedidos, stock, equipo, publicidad y liquidaciones.
               </p>
             </div>
 
@@ -258,7 +260,7 @@ export const AuthModal: React.FC = () => {
                 <span>Formulario de Solicitud de Admisión de Comercio</span>
               </h4>
               <p className="text-[11px] text-slate-500 mb-4">
-                Completá los datos de tu empresa. Te responderemos en menos de 2 horas hábiles.
+                Completá los datos de tu empresa y tu tienda queda activa en el acto.
               </p>
 
               <form onSubmit={handleMerchantSubmit} className="space-y-3 text-xs">

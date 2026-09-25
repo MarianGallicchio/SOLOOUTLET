@@ -1,7 +1,7 @@
 import React from 'react';
 import { useStore } from '../context/StoreContext';
-import { isMerchant, isPlatformOwner } from '../utils/sellerWorkspace';
-import { Package, ShoppingBag, LayoutDashboard, Heart, LogIn, PackagePlus, Store, TrendingUp, BarChart3 } from 'lucide-react';
+import { isMerchant } from '../utils/sellerWorkspace';
+import { Package, ShoppingBag, Heart, LogIn, PackagePlus, Store } from 'lucide-react';
 import { NotificationBell } from './NotificationBell';
 
 const GRADE_PILLS = [
@@ -26,7 +26,6 @@ export const Navbar: React.FC = () => {
 
   const totalCartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
   const seller = isMerchant(currentUser);
-  const owner = isPlatformOwner(currentUser);
 
   const goPill = (condition: string | null) => {
     if (condition === null) {
@@ -112,18 +111,6 @@ export const Navbar: React.FC = () => {
             </button>
           )}
 
-          {owner && (
-            <button
-              onClick={() => setCurrentView('admin')}
-              className={linkCls(currentView === 'admin')}
-              title="Estadísticas de ventas, facturación y stock"
-            >
-              <span className="inline-flex items-center gap-1.5">
-                <TrendingUp className="w-4 h-4 text-emerald-600" />
-                <span>Estadísticas de Ventas</span>
-              </span>
-            </button>
-          )}
         </nav>
 
         {/* Actions */}

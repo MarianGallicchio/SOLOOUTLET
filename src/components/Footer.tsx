@@ -107,6 +107,14 @@ export const Footer: React.FC = () => {
                 </button>
               </li>
               <li>
+                <button
+                  onClick={() => (seller ? setCurrentView('seller-workspace') : openAuthModal('merchant'))}
+                  className={linkCls}
+                >
+                  {seller ? 'Acceder a mi tienda' : 'Acceso vendedores'}
+                </button>
+              </li>
+              <li>
                 <button onClick={() => goHelp('terminos')} className={linkCls}>
                   Términos de servicio para comercios
                 </button>
