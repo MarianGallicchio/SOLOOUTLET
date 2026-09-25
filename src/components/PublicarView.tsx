@@ -3,6 +3,7 @@ import { useStore } from '../context/StoreContext';
 import { ConditionType, CategoryType, Product } from '../types';
 import { formatPrice, getConditionBadgeStyle } from '../utils/formatters';
 import { COMMISSION_CONFIG, calcSettlement } from '../utils/commissions';
+import { imgLaptop } from '../assets/images';
 import {
   Camera,
   Upload,
@@ -230,7 +231,7 @@ const STORAGE_KEY = 'solooutlet_publicar_draft_v1';
 
 const INITIAL_FORM: FormState = {
   photos: {
-    main: '/src/assets/images/product_laptop_outlet_1790289258991.jpg',
+    main: imgLaptop,
     defect: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=800&q=80',
     general1: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80',
   },

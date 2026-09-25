@@ -4,6 +4,7 @@ import { ConditionType, CategoryType } from '../types';
 import { formatPrice } from '../utils/formatters';
 import { COMMISSION_CONFIG, calcSettlement } from '../utils/commissions';
 import { isMerchant } from '../utils/sellerWorkspace';
+import { imgLaptop } from '../assets/images';
 import {
   Boxes,
   BadgeDollarSign,
@@ -57,7 +58,7 @@ export const VenderView: React.FC = () => {
 
   // Photo slots state: Slot 1 (Principal), Slot 2 (Defecto obligatorio), Slot 3 (Ángulo general)
   const [photos, setPhotos] = useState<Record<string, string>>({
-    main: '/src/assets/images/product_laptop_outlet_1790289258991.jpg',
+    main: imgLaptop,
     defect: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=800&q=80',
     angle: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80',
   });

@@ -5,6 +5,10 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
+    // En GitHub Actions el sitio se sirve bajo /SOLOOUTLET/ (GitHub Pages).
+    // En local se sirve desde / como siempre.
+    // (GITHUB_ACTIONS solo existe en los runners; cualquier valor no vacío activa el base.)
+    base: process.env.GITHUB_ACTIONS ? '/SOLOOUTLET/' : '/',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {

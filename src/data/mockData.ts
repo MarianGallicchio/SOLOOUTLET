@@ -1,4 +1,5 @@
 import { Product, Order } from '../types';
+import { imgLaptop, imgTv, imgEspresso, imgHeadphones } from '../assets/images';
 
 export const INITIAL_PRODUCTS: Product[] = [
   {
@@ -12,7 +13,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     price: 389999,
     originalPrice: 529999,
     discount: 26,
-    image: '/src/assets/images/product_laptop_outlet_1790289258991.jpg',
+    image: imgLaptop,
     stock: 3,
     conditionDetails: 'Devolución dentro de los 10 días de compra por cliente que cambió de color. Equipo probado en banco de diagnóstico, batería con 2 ciclos y pantalla 100% impecable. Caja original con sellos abiertos.',
     warrantyDays: 90,
@@ -57,7 +58,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     price: 329999,
     originalPrice: 459999,
     discount: 28,
-    image: '/src/assets/images/product_smart_tv_outlet_1790289269787.jpg',
+    image: imgTv,
     stock: 2,
     conditionDetails: 'Pequeño micro-rayón cosmético de 1.5cm en la parte trasera del marco de plástico (no visible de frente). El panel LED está impoluto sin píxeles muertos. Control remoto y base metálica nuevos.',
     warrantyDays: 60,
@@ -91,7 +92,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     price: 94999,
     originalPrice: 139999,
     discount: 32,
-    image: '/src/assets/images/product_espresso_outlet_1790289278547.jpg',
+    image: imgEspresso,
     stock: 5,
     conditionDetails: 'Producto de exhibición de sucursal. No cuenta con la caja de cartón de fábrica; se entrega en embalaje acolchado de seguridad reforzado. Incluye porta filtro doble, cuchara dosificadora y prensa.',
     warrantyDays: 90,
@@ -125,7 +126,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     price: 44999,
     originalPrice: 109999,
     discount: 59,
-    image: '/src/assets/images/product_wireless_headphones_1790289288262.jpg',
+    image: imgHeadphones,
     stock: 4,
     conditionDetails: 'Falla menor identificada: El botón físico de volumen (+) tiene respuesta algo dura, pero el control touch y mediante la app de celular funciona de manera perfecta. Audio y cancelación activa de ruido (ANC) impecables.',
     warrantyDays: 30,
