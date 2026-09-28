@@ -13,6 +13,9 @@ const NEWSLETTER_KEY = 'solooutlet_newsletter';
 export const Footer: React.FC = () => {
   const { setCurrentView, setHelpSection, currentUser, openAuthModal, triggerPushNotification } = useStore();
   const seller = isMerchant(currentUser);
+  // La zona Comercios (accesos rápidos de venta) solo la ve quien tiene cuenta comercio.
+  // El comprador común solo ve Compradores + Ayuda + Confianza.
+  const showComercios = seller || isPlatformOwner(currentUser);
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState<string | null>(null);
 
@@ -118,7 +121,7 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-10">
+        <div className={`grid grid-cols-2 ${showComercios ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-8 mb-10`}>
 
           {/* Brand */}
           <div className="col-span-2 md:col-span-1 space-y-3">
@@ -146,30 +149,32 @@ export const Footer: React.FC = () => {
             </ul>
           </div>
 
-          {/* Comercios */}
-          <div className="space-y-2">
-            <h5 className="font-bold text-slate-900 uppercase tracking-wider text-[11px]">Comercios</h5>
-            <ul className="space-y-1.5">
-              <li>
-                <button onClick={goPublish} className={`${linkCls} font-semibold text-[#004AC6]`}>
-                  Publicar producto (Asistente 4 pasos)
-                </button>
-              </li>
-              <li><button onClick={() => setCurrentView('vender')} className={linkCls}>Vender stock y devoluciones</button></li>
-              <li><button onClick={() => setCurrentView('vender')} className={linkCls}>Simulador de comisiones</button></li>
-              <li>
-                <button onClick={goAdminPanel} className={`${linkCls} font-semibold text-[#004AC6]`}>
-                  Panel de administración y ventas
-                </button>
-              </li>
-              <li>
-                <button onClick={() => (seller ? setCurrentView('seller-workspace') : openAuthModal('merchant'))} className={linkCls}>
-                  {seller ? 'Acceder a mi tienda' : 'Acceso vendedores'}
-                </button>
-              </li>
-              <li><button onClick={() => goHelp('terminos')} className={linkCls}>Términos de servicio para comercios</button></li>
-            </ul>
-          </div>
+          {/* Comercios — OCULTA para el comprador común: solo cuentas comercio */}
+          {showComercios && (
+            <div className="space-y-2">
+              <h5 className="font-bold text-slate-900 uppercase tracking-wider text-[11px]">Comercios</h5>
+              <ul className="space-y-1.5">
+                <li>
+                  <button onClick={goPublish} className={`${linkCls} font-semibold text-[#004AC6]`}>
+                    Publicar producto (Asistente 4 pasos)
+                  </button>
+                </li>
+                <li><button onClick={() => setCurrentView('vender')} className={linkCls}>Vender stock y devoluciones</button></li>
+                <li><button onClick={() => setCurrentView('vender')} className={linkCls}>Simulador de comisiones</button></li>
+                <li>
+                  <button onClick={goAdminPanel} className={`${linkCls} font-semibold text-[#004AC6]`}>
+                    Panel de administración y ventas
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => (seller ? setCurrentView('seller-workspace') : openAuthModal('merchant'))} className={linkCls}>
+                    {seller ? 'Acceder a mi tienda' : 'Acceso vendedores'}
+                  </button>
+                </li>
+                <li><button onClick={() => goHelp('terminos')} className={linkCls}>Términos de servicio para comercios</button></li>
+              </ul>
+            </div>
+          )}
 
           {/* Ayuda */}
           <div className="space-y-2">

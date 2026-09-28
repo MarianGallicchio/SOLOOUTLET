@@ -48,8 +48,8 @@ export const AmexIcon: React.FC = () => (
 
 export const MercadoPagoIcon: React.FC = () => (
   <Badge label="Mercado Pago">
-    <svg viewBox="0 0 72 20" className="h-4 w-auto" role="img" aria-hidden="true">
-      <text x="36" y="14.5" textAnchor="middle" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="12.5" fill="#009EE3">
+    <svg viewBox="0 0 104 22" className="h-[18px] w-auto" role="img" aria-hidden="true">
+      <text x="52" y="15.5" textAnchor="middle" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="12.5" letterSpacing="0.2" fill="#009EE3">
         mercado pago
       </text>
     </svg>
