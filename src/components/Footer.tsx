@@ -6,6 +6,7 @@ import {
   Package, Mail, Facebook, Instagram, Twitter, Youtube,
   Check, MessageCircle,
 } from 'lucide-react';
+import { PaymentBadges } from './PaymentIcons';
 
 const NEWSLETTER_KEY = 'solooutlet_newsletter';
 
@@ -212,13 +213,7 @@ export const Footer: React.FC = () => {
         {/* Métodos de pago */}
         <div className="pt-6 border-t border-slate-100">
           <h5 className="font-bold text-slate-900 text-[11px] mb-2.5">Métodos de pago:</h5>
-          <div className="flex flex-wrap gap-1.5">
-            {['Mercado Pago', 'Visa', 'Mastercard', 'Amex', 'DEBIN / CBU'].map((m) => (
-              <span key={m} className="px-2 py-1 bg-slate-100 border border-slate-200 rounded font-bold text-[10px] text-slate-700">
-                {m}
-              </span>
-            ))}
-          </div>
+          <PaymentBadges />
         </div>
 
         {/* Bottom bar */}
