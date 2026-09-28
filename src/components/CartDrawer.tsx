@@ -85,7 +85,7 @@ export const CartDrawer: React.FC = () => {
                   Tu carrito está vacío
                 </h3>
                 <p className="text-xs text-slate-500 mb-6">
-                  Descubrí cientos de productos de primeras marcas a precios de liquidación con garantía.
+                  Descubrí cientos de productos de primeras marcas a precios de liquidación con fotos reales.
                 </p>
                 <button
                   onClick={handleGoToCatalog}

@@ -22,7 +22,7 @@ const GRADES = [
     title: 'Como Nuevo / Caja Abierta',
     off: '25% a 40% OFF',
     desc: 'Devoluciones de menos de 14 días, estética 10/10 impecable, batería 99%-100%.',
-    checks: ['Estética: 10/10 impecable', 'Batería: 99%-100%', 'Garantía: 6 a 12 meses'],
+    checks: ['Estética: 10/10 impecable', 'Batería: 99%-100%', 'Garantía fabricante: 6 a 12 meses'],
     pill: 'bg-emerald-100 text-emerald-800',
     filter: 'Devolución',
   },
@@ -31,7 +31,7 @@ const GRADES = [
     title: 'Detalle Estético Leve',
     off: '40% a 60% OFF',
     desc: 'Microrrayones o marcas mínimas. Funciona al 90%+ del original.',
-    checks: ['Estética: 8.5/10 (micromarca)', 'Rendimiento: +90% original', 'Garantía: 90 días'],
+    checks: ['Estética: 8.5/10 (micromarca)', 'Rendimiento: +90% original', 'Garantía fabricante: 90 días'],
     pill: 'bg-amber-100 text-amber-800',
     filter: 'Rayado',
   },
@@ -40,7 +40,7 @@ const GRADES = [
     title: 'Reacondicionado Funcional',
     off: '50% a 75% OFF',
     desc: 'Estética 7/10 visible, rendimiento 100% probado por servicio técnico.',
-    checks: ['Estética: 7/10 visible', 'Rendimiento: 100% probado', 'Garantía: 30 a 60 días'],
+    checks: ['Estética: 7/10 visible', 'Rendimiento: 100% probado', 'Garantía fabricante: 30 a 60 días'],
     pill: 'bg-indigo-100 text-indigo-800',
     filter: 'Reacondicionado',
   },
@@ -223,10 +223,10 @@ export const HomeView: React.FC = () => {
                 🛡️
               </div>
               <h3 className="text-base font-bold text-slate-900 mb-2">
-                3. Comprás directo con garantía
+                3. Comprás directo, venta final
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                Pagá con Mercado Pago o tarjetas en cuotas. El comercio despacha en 24 horas y contás con la protección de garantía oficial solooutlet.
+                Pagá con Mercado Pago o tarjetas en cuotas. El comercio despacha en 24 horas. Venta final sin devoluciones, con garantía del fabricante por fallas de funcionamiento.
               </p>
             </div>
           </div>
@@ -277,8 +277,8 @@ export const HomeView: React.FC = () => {
             <div className="flex items-start gap-3">
               <ShieldCheck className="w-5 h-5 text-[#004AC6] shrink-0 mt-0.5" />
               <div>
-                <h4 className="text-xs font-bold text-slate-900">Garantía Declarada</h4>
-                <p className="text-[11px] text-slate-500 leading-tight">Hasta 90 días en todos los productos.</p>
+                <h4 className="text-xs font-bold text-slate-900">Garantía del fabricante</h4>
+                <p className="text-[11px] text-slate-500 leading-tight">Por fallas de funcionamiento · Venta final.</p>
               </div>
             </div>
 

@@ -21,13 +21,14 @@ import {
 import { DEFAULT_LOCATIONS, POPULAR_LOCATION_SHORTCUTS } from '../data/locations';
 
 export const CheckoutModal: React.FC = () => {
-  const { cart, isCheckoutOpen, setIsCheckoutOpen, processCheckout, currentUser } = useStore();
+  const { cart, isCheckoutOpen, setIsCheckoutOpen, processCheckout, currentUser, setCurrentView, setHelpSection } = useStore();
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>('mercadopago');
   const [shippingOption, setShippingOption] = useState<ShippingOption>('standard');
   const [couponInput, setCouponInput] = useState('');
   const [couponError, setCouponError] = useState<string | null>(null);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [copiedAlias, setCopiedAlias] = useState(false);
 
@@ -84,6 +85,7 @@ export const CheckoutModal: React.FC = () => {
 
   const handlePay = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!acceptedTerms) return;
     setIsProcessing(true);
 
     const paymentDetails: PaymentDetails = {
@@ -760,12 +762,36 @@ export const CheckoutModal: React.FC = () => {
             <div className="mt-6 pt-4 border-t border-slate-200 space-y-3">
               <div className="flex items-center gap-2 text-[11px] text-slate-500">
                 <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Compra protegida por Garantía Oficial solooutlet de 30 a 90 días.</span>
+                <span>Garantía del fabricante por fallas de funcionamiento · Venta final sin devoluciones.</span>
               </div>
+
+              {/* Aceptación obligatoria de términos (protección legal) */}
+              <label className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  className="w-4 h-4 mt-0.5 accent-[#004AC6] shrink-0"
+                />
+                <span className="text-slate-700 leading-relaxed">
+                  Acepto que esta compra es <strong>final y sin devoluciones</strong>, que lo que veo en las fotos reales es lo que recibo, y que la garantía corresponde al <strong>fabricante</strong>. Solo se admite disputa por fraude o error grave.{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCheckoutOpen(false);
+                      setHelpSection('terminos');
+                      setCurrentView('ayuda');
+                    }}
+                    className="text-[#004AC6] hover:underline font-bold"
+                  >
+                    Leer términos
+                  </button>
+                </span>
+              </label>
 
               <button
                 type="submit"
-                disabled={isProcessing}
+                disabled={isProcessing || !acceptedTerms}
                 className="w-full py-4 px-6 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75"
               >
                 {isProcessing ? (

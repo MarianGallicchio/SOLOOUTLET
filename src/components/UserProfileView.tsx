@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useStore } from '../context/StoreContext';
 import { formatPrice, getConditionBadgeStyle } from '../utils/formatters';
 import { isMerchant } from '../utils/sellerWorkspace';
-import { Order, Product } from '../types';
+import { Order, Product, DisputeReason, DISPUTE_REASONS } from '../types';
 import {
   Package,
   ShoppingBag,
@@ -39,7 +39,7 @@ export const UserProfileView: React.FC = () => {
     setIsCartOpen,
     setIsCheckoutOpen,
     cancelOrder,
-    requestReturn,
+    openDispute,
     addAddress,
     removeAddress,
   } = useStore();
@@ -53,6 +53,8 @@ export const UserProfileView: React.FC = () => {
 
   // Selected order for tracking modal
   const [trackingOrder, setTrackingOrder] = useState<Order | null>(null);
+  // Disputa por fraude/error grave (ventas finales, sin devoluciones)
+  const [disputeOrder, setDisputeOrder] = useState<{ id: string; reason: DisputeReason } | null>(null);
   const [copiedTracking, setCopiedTracking] = useState(false);
 
   // Re-buy action feedback state
@@ -301,7 +303,7 @@ export const UserProfileView: React.FC = () => {
                 No hay compras con este filtro
               </h3>
               <p className="text-xs text-slate-500 mb-6">
-                Descubrí productos de outlet con precios de liquidación y garantía de hasta 90 días.
+                Descubrí productos de outlet con precios de liquidación y garantía del fabricante.
               </p>
               <button
                 onClick={() => setCurrentView('catalog')}
@@ -482,19 +484,19 @@ export const UserProfileView: React.FC = () => {
                           Cancelar compra
                         </button>
                       )}
-                      {order.status === 'completado' && !order.returnRequested && (
+                      {order.status === 'completado' && !order.dispute && (
                         <button
                           type="button"
-                          onClick={() => requestReturn(order.id)}
+                          onClick={() => setDisputeOrder({ id: order.id, reason: 'no_coincide' })}
                           className="px-3 py-2 rounded-xl border border-amber-200 text-amber-700 hover:bg-amber-50 font-bold text-xs transition-colors cursor-pointer"
-                          title="Pedir devolución al vendedor"
+                          title="Solo por fraude o error grave: las ventas son finales"
                         >
-                          Pedir devolución
+                          Reportar problema grave
                         </button>
                       )}
-                      {order.returnRequested && (
+                      {order.dispute && (
                         <span className="px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 font-bold text-xs">
-                          Devolución solicitada
+                          Disputa abierta: {order.dispute.reasonLabel}
                         </span>
                       )}
                     </div>
@@ -779,6 +781,55 @@ export const UserProfileView: React.FC = () => {
       </>
       )}
 
+      {/* ── DISPUTA: solo fraude o error grave (ventas finales) ── */}
+      {disputeOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+          <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs" onClick={() => setDisputeOrder(null)} />
+          <div className="relative bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 sm:p-7 z-10 animate-in fade-in zoom-in-95 border border-slate-200">
+            <h3 className="text-base font-bold text-slate-900">Reportar problema grave</h3>
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              Las ventas son finales y <strong>no tienen devolución</strong>. Solo se admite disputa por fraude o error grave en el envío.
+            </p>
+            <div className="space-y-2 mt-4">
+              {DISPUTE_REASONS.map((r) => (
+                <button
+                  key={r.value}
+                  type="button"
+                  onClick={() => setDisputeOrder({ ...disputeOrder, reason: r.value })}
+                  className={`w-full text-left p-3 rounded-xl border text-xs transition-all cursor-pointer ${
+                    disputeOrder.reason === r.value
+                      ? 'border-amber-500 bg-amber-50 ring-1 ring-amber-500/40'
+                      : 'border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  <span className="block font-bold text-slate-900">{r.label}</span>
+                  <span className="block text-slate-500 mt-0.5">{r.hint}</span>
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-2 mt-5">
+              <button
+                type="button"
+                onClick={() => setDisputeOrder(null)}
+                className="py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+              >
+                Volver
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  openDispute(disputeOrder.id, disputeOrder.reason);
+                  setDisputeOrder(null);
+                }}
+                className="py-2.5 rounded-xl bg-amber-600 text-white text-xs font-bold hover:bg-amber-700 cursor-pointer"
+              >
+                Abrir disputa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── TRACKING MODAL: VER ESTADO DE ENVÍO ── */}
       {trackingOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
@@ -948,7 +999,7 @@ export const UserProfileView: React.FC = () => {
             <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-2xl text-xs flex items-start gap-2 mb-5">
               <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
               <span className="text-emerald-900">
-                <strong>Garantía vigente:</strong> hasta {Math.max(...trackingOrder.items.map((i) => i.product.warrantyDays || 30))} días por el estado declarado. Si no coincide, tenés 10 días de prueba para cambio o devolución.
+                <strong>Garantía del fabricante:</strong> hasta {Math.max(...trackingOrder.items.map((i) => i.product.warrantyDays || 30))} días por fallas de funcionamiento. Venta final sin devoluciones; disputas solo por fraude o error grave.
               </span>
             </div>
 

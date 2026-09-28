@@ -104,6 +104,22 @@ export interface OrderSettlementSnapshot {
   rateApplied: number;
 }
 
+export type DisputeReason = 'no_recibido' | 'no_coincide' | 'posible_fraude';
+
+export interface OrderDispute {
+  reason: DisputeReason;
+  reasonLabel: string;
+  date: string;
+  status: 'abierta' | 'resuelta';
+}
+
+/** Motivos válidos de disputa (ventas finales: sin devoluciones por arrepentimiento). */
+export const DISPUTE_REASONS: { value: DisputeReason; label: string; hint: string }[] = [
+  { value: 'no_recibido', label: 'No recibí el pedido', hint: 'Pasaron más de 7 días hábiles del despacho' },
+  { value: 'no_coincide', label: 'Error grave: no coincide', hint: 'Producto distinto o falla funcional no declarada' },
+  { value: 'posible_fraude', label: 'Posible fraude', hint: 'Vendedor o publicación sospechosa' },
+];
+
 export type PayoutStatus = 'pendiente' | 'liberado' | 'transferido' | 'retenido';
 
 export interface Order {
@@ -122,8 +138,11 @@ export interface Order {
   total: number;
   paymentDetails: PaymentDetails;
   status: 'completado' | 'en_preparacion' | 'despachado' | 'cancelado';
-  /** El comprador pidió devolución (solo entregados). Lo gestiona el vendedor. */
-  returnRequested?: boolean;
+  /**
+   * Disputa por fraude o error grave (las ventas son finales, sin devoluciones).
+   * Único canal post-entrega: lo gestiona el vendedor / SoloOutlet.
+   */
+  dispute?: OrderDispute;
   /** Liquidación automática: comisión retenida por SoloOutlet + neto vendedor. */
   settlement?: OrderSettlementSnapshot;
   /** Vendedor beneficiario (nombre de comercio). */

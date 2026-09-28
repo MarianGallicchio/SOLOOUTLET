@@ -678,8 +678,8 @@ export const CatalogView: React.FC = () => {
       <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-2xl flex items-start gap-2.5">
         <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
         <div className="text-2xs text-blue-900">
-          <span className="font-bold block">Garantía SoloOutlet</span>
-          <span>Cada producto incluye informe de falla y garantía formal de 30 a 180 días.</span>
+          <span className="font-bold block">Venta final · Fotos reales</span>
+          <span>Cada producto incluye informe de falla con fotos reales y garantía del fabricante de 30 a 180 días. Sin devoluciones.</span>
         </div>
       </div>
     </div>

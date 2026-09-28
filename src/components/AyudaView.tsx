@@ -5,7 +5,7 @@ import { ShieldCheck, Truck, FileText, ArrowRight } from 'lucide-react';
 type Section = 'garantia' | 'envios' | 'terminos';
 
 const SECTIONS: { key: Section; label: string; icon: React.ReactNode }[] = [
-  { key: 'garantia', label: 'Garantía y devoluciones', icon: <ShieldCheck className="w-4 h-4" /> },
+  { key: 'garantia', label: 'Venta final y garantía', icon: <ShieldCheck className="w-4 h-4" /> },
   { key: 'envios', label: 'Seguimiento de envíos', icon: <Truck className="w-4 h-4" /> },
   { key: 'terminos', label: 'Términos para comercios', icon: <FileText className="w-4 h-4" /> },
 ];
@@ -41,14 +41,14 @@ export const AyudaView: React.FC = () => {
       <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 mt-4 text-sm text-slate-700 leading-relaxed space-y-4">
         {active === 'garantia' && (
           <>
-            <h2 className="text-lg font-bold text-slate-900">Garantía y devoluciones</h2>
-            <p>Cada producto publica su garantía en días (30 a 180 según el estado). Si lo que recibís no coincide con el estado declarado, tenés <strong>10 días de prueba</strong> para cambio o devolución total.</p>
+            <h2 className="text-lg font-bold text-slate-900">Venta final · Garantía del fabricante</h2>
+            <p>Todas las ventas son <strong>finales y sin devoluciones</strong>: lo que ves en las fotos reales es exactamente lo que recibís. Por eso el precio es de liquidación.</p>
             <ul className="list-disc pl-5 space-y-1.5">
-              <li><strong>Grado A:</strong> 6 a 12 meses de garantía.</li>
-              <li><strong>Grado B:</strong> 90 días de garantía.</li>
-              <li><strong>Grado C:</strong> 30 a 60 días de garantía.</li>
+              <li><strong>Garantía del fabricante</strong> por fallas de funcionamiento (no cosméticas):
+                Grado A de 6 a 12 meses, Grado B 90 días, Grado C de 30 a 60 días.</li>
+              <li><strong>Sin cambios ni arrepentimiento:</strong> revisá el reporte óptico y las fotos antes de pagar.</li>
+              <li><strong>Disputas:</strong> solo por fraude o error grave en el envío, desde Mis Pedidos → Reportar problema grave.</li>
             </ul>
-            <p>El dinero se acredita al mismo medio de pago en un plazo máximo de 10 días hábiles.</p>
           </>
         )}
         {active === 'envios' && (
@@ -70,8 +70,9 @@ export const AyudaView: React.FC = () => {
         )}
         {active === 'terminos' && (
           <>
-            <h2 className="text-lg font-bold text-slate-900">Términos de servicio para comercios</h2>
+            <h2 className="text-lg font-bold text-slate-900">Términos del servicio</h2>
             <ul className="list-disc pl-5 space-y-1.5">
+              <li><strong>Compra final:</strong> al pagar aceptás que la venta es final y sin devoluciones, que las fotos son reales y que la garantía corresponde al fabricante. Solo se admite disputa por fraude o error grave.</li>
               <li><strong>Comisión:</strong> SoloOutlet retiene automáticamente el 8% de cada venta (mínimo $100) más el costo de pasarela. El neto se transfiere a tu CBU/alias.</li>
               <li><strong>Transparencia obligatoria:</strong> toda publicación debe declarar el estado real con fotos del defecto. Publicaciones engañosas se dan de baja.</li>
               <li><strong>Despacho:</strong> 24 hs hábiles desde la venta. Tres incumplimientos suspenden la tienda.</li>

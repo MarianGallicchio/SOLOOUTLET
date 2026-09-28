@@ -15,6 +15,7 @@ import {
   UserCheck,
   Send,
   Heart,
+  Camera,
 } from 'lucide-react';
 
 export const ProductDetailModal: React.FC = () => {
@@ -245,8 +246,8 @@ export const ProductDetailModal: React.FC = () => {
                         <span className="font-extrabold text-emerald-700">Testeada Óptima</span>
                       </div>
                       <div className="flex items-center justify-between bg-slate-50 px-2 py-1.5 rounded-lg">
-                        <span className="font-semibold text-slate-700">Garantía</span>
-                        <span className="font-extrabold text-[#004AC6]">{product.warrantyDays} Días Cambio</span>
+                        <span className="font-semibold text-slate-700">Garantía del fabricante</span>
+                        <span className="font-extrabold text-[#004AC6]">{product.warrantyDays} días</span>
                       </div>
                     </div>
                   </div>
@@ -361,15 +362,19 @@ export const ProductDetailModal: React.FC = () => {
                 )}
 
                 {/* Trust highlights */}
-                <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 border-t border-slate-100 pt-3 mb-6">
+                <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 border-t border-slate-100 pt-3 mb-3">
                   <div className="flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
-                    <span>Garantía de {product.warrantyDays} días</span>
+                    <span>Garantía del fabricante: {product.warrantyDays} días</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Truck className="w-4 h-4 text-blue-600 shrink-0" />
                     <span>Envío a todo el país</span>
                   </div>
+                </div>
+                <div className="flex items-center gap-2 text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 mb-6">
+                  <Camera className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Fotos 100% reales del lote que recibís · Venta final sin devoluciones</span>
                 </div>
               </div>
 

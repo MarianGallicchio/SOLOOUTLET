@@ -58,7 +58,7 @@ export const Hero: React.FC = () => {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full">
               {[
                 { icon: <Camera className="w-4 h-4 text-[#004AC6]" />, label: 'Fotos reales 100%' },
-                { icon: <BadgeCheck className="w-4 h-4 text-emerald-600" />, label: '30 días cambio' },
+                { icon: <BadgeCheck className="w-4 h-4 text-emerald-600" />, label: 'Venta final · Sin devoluciones' },
                 { icon: <Truck className="w-4 h-4 text-[#004AC6]" />, label: 'Despacho en 24h' },
                 { icon: <ShieldCheck className="w-4 h-4 text-emerald-600" />, label: 'Mercado Pago' },
               ].map((t) => (

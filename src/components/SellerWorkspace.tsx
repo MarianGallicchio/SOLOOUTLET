@@ -333,8 +333,8 @@ export const SellerWorkspace: React.FC = () => {
                     <span className="font-mono font-bold text-[#004AC6] text-sm">{o.orderNumber}</span>
                     <span className="text-[11px] text-slate-400">{o.date}</span>
                     <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${st.cls}`}>{st.label}</span>
-                    {o.returnRequested && (
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">↩ Devolución pedida</span>
+                    {o.dispute && (
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">🚨 Disputa: {o.dispute.reasonLabel}</span>
                     )}
                   </div>
                   {next && (

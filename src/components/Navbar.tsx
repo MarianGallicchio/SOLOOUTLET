@@ -51,7 +51,7 @@ export const Navbar: React.FC = () => {
             🔥 Liquidaciones de temporada hasta 70% OFF · Envíos rápidos a todo el país · Cuotas sin interés con Mercado Pago
           </span>
           <span className="hidden md:inline font-semibold whitespace-nowrap">
-            ✓ Garantía de transparencia radical 30 días
+            ✓ Transparencia radical certificada · Venta final
           </span>
         </div>
       </div>

@@ -63,7 +63,7 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <button onClick={() => goHelp('garantia')} className={linkCls}>
-                  Garantía y devoluciones de 90 días
+                  Venta final y garantía del fabricante
                 </button>
               </li>
               <li>

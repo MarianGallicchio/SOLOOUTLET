@@ -708,7 +708,7 @@ export const PublicarView: React.FC = () => {
         `Modelo: ${form.model}`,
         form.serialNumber ? `N/S: ${form.serialNumber}` : 'Número de serie validado en depósito',
         `Incluye: ${form.includedItems.join(', ')}`,
-        `Garantía oficial solooutlet`,
+        `Garantía del fabricante`,
       ],
       isFeatured: form.boostType === 'premium',
       brand: form.brand,
@@ -1696,7 +1696,7 @@ export const PublicarView: React.FC = () => {
                     </div>
 
                     <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
-                      <span>Garantía: {item.type === 'Con falla' ? '30 días' : '90 días'}</span>
+                      <span>Garantía fabricante: {item.type === 'Con falla' ? '30 días' : '90 días'}</span>
                       <span className="font-semibold text-blue-600">
                         {isSelected ? 'Seleccionado' : 'Elegir'}
                       </span>
@@ -2338,7 +2338,7 @@ export const PublicarView: React.FC = () => {
 
                   <div className="flex items-center justify-between text-xs text-slate-500">
                     <span>{previewProduct.vendor}</span>
-                    <span className="text-slate-400">Garantía {previewProduct.warrantyDays}d</span>
+                    <span className="text-slate-400">Garantía fabr. {previewProduct.warrantyDays}d · Venta final</span>
                   </div>
 
                   <div className="p-2 rounded-xl bg-amber-50/80 border border-amber-200/80 text-[11px] text-amber-900 line-clamp-2">

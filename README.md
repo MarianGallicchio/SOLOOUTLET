@@ -62,8 +62,12 @@ src/
 
 - **Comisión**: 8% automática por venta (mínimo $100) + costo de pasarela.
   El neto queda `pendiente` y se transfiere al CBU/alias del vendedor.
+- **Venta final**: sin devoluciones ni cambios. Solo se admite `dispute`
+  (fraude o error grave) en pedidos entregados.
+- **Garantía**: siempre del fabricante, nunca del vendedor.
+- **Términos**: el checkout exige aceptación explícita antes de pagar.
 - **Pedidos**: `en_preparacion → despachado → completado`, más `cancelado`
-  (devuelve stock, anula dinero) y `returnRequested` (devolución).
+  (devuelve stock, anula dinero).
 - **Cupones**: `OUTLET10`, `BIENVENIDA15` (ver `COUPONS`).
 - **Envíos**: estándar (gratis +$150k) y expreso (gratis +$300k).
 

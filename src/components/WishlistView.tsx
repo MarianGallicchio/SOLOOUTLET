@@ -123,7 +123,7 @@ export const WishlistView: React.FC = () => {
                       {product.title}
                     </h3>
                     <div className="text-xs text-slate-500 mb-2 truncate">
-                      {product.vendor} · {product.warrantyDays}d garantía
+                      {product.vendor} · {product.warrantyDays}d garantía fabr.
                     </div>
 
                     <div className="flex items-baseline gap-2 mb-3">

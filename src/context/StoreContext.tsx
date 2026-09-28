@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Product, CartItem, Order, CustomerData, PaymentDetails, ViewType, Review, User, MerchantApplication, ChatMessage, PushNotification, Seller, Payout, SellerMember, SellerRole, AdCampaign, IntegrationKey, SavedAddress } from '../types';
+import { Product, CartItem, Order, CustomerData, PaymentDetails, ViewType, Review, User, MerchantApplication, ChatMessage, PushNotification, Seller, Payout, SellerMember, SellerRole, AdCampaign, IntegrationKey, SavedAddress, DisputeReason, DISPUTE_REASONS } from '../types';
 import { INITIAL_PRODUCTS, INITIAL_ORDERS } from '../data/mockData';
 import { calcSettlement, releaseDateFrom, COMMISSION_CONFIG, resolveCoupon, resolveShipping } from '../utils/commissions';
 import { DEFAULT_INTEGRATIONS } from '../utils/sellerWorkspace';
@@ -116,7 +116,7 @@ interface StoreContextType {
   addNewProduct: (productData: Omit<Product, 'id' | 'sku' | 'createdAt'>) => void;
   processCheckout: (customer: CustomerData, payment: PaymentDetails, couponCode?: string) => Order;
   cancelOrder: (orderId: string) => void;
-  requestReturn: (orderId: string) => void;
+  openDispute: (orderId: string, reason: DisputeReason) => void;
   addAddress: (address: Omit<SavedAddress, 'id'>) => void;
   removeAddress: (addressId: string) => void;
   goToStateFilter: (stateName: string) => void;
@@ -425,7 +425,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (lower.includes('envío') || lower.includes('envio') || lower.includes('caba') || lower.includes('llega') || lower.includes('cuándo') || lower.includes('tiempo')) {
         replyText = `Hola! Sí, despachamos en 24hs hábiles por Andreani Express a todo el país. Para CABA y GBA llega habitualmente en 24 a 48 hs. El paquete viaja 100% asegurado por el valor total.`;
       } else if (lower.includes('garant') || lower.includes('cambio') || lower.includes('devolu') || lower.includes('falla')) {
-        replyText = `Hola! Tenés ${targetProd?.warrantyDays || 60} días de garantía técnica oficial con solooutlet y 10 días de prueba para cambio o devolución por disconformidad si el estado no coincide exactamente con lo publicado.`;
+        replyText = `Hola! Las ventas son finales y sin devoluciones: lo que ves en las fotos reales es lo que recibís. La garantía de ${targetProd?.warrantyDays || 60} días corresponde al fabricante por fallas de funcionamiento. Solo se abre disputa por fraude o error grave en el envío.`;
       } else if (lower.includes('accesorio') || lower.includes('cargador') || lower.includes('cable') || lower.includes('caja')) {
         replyText = `Hola! Viene probado con sus cargadores y cables esenciales homologados. En caso de no tener caja de fábrica, va en caja de cartón corrugado triple acolchada de alta seguridad.`;
       } else if (lower.includes('rayón') || lower.includes('rayon') || lower.includes('detalle') || lower.includes('marca')) {
@@ -796,16 +796,26 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   };
 
-  /** Pide devolución de un pedido entregado (la gestiona el vendedor). */
-  const requestReturn = (orderId: string) => {
+  /**
+   * Abre una disputa por fraude o error grave en un pedido entregado.
+   * Las ventas son finales y sin devoluciones: este es el único canal post-entrega.
+   */
+  const openDispute = (orderId: string, reason: DisputeReason) => {
     const target = orders.find((o) => o.id === orderId);
-    if (!target || target.status !== 'completado' || target.returnRequested) return;
-    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, returnRequested: true } : o)));
-    showToast('✓ Devolución solicitada. El vendedor te contactará por chat.');
+    if (!target || target.status !== 'completado' || target.dispute) return;
+    const reasonLabel = DISPUTE_REASONS.find((r) => r.value === reason)?.label ?? reason;
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === orderId
+          ? { ...o, dispute: { reason, reasonLabel, date: new Date().toISOString().split('T')[0], status: 'abierta' as const } }
+          : o,
+      ),
+    );
+    showToast('✓ Disputa abierta. SoloOutlet la revisará con el vendedor.');
     triggerPushNotification({
       type: 'sale_alert',
-      title: `↩️ Devolución solicitada en ${target.orderNumber}`,
-      body: `${target.customer.fullName} pide devolver la compra. Revisalo en tu panel.`,
+      title: `🚨 Disputa abierta en ${target.orderNumber}`,
+      body: `${target.customer.fullName} reporta: ${reasonLabel}. Revisalo en tu panel.`,
       linkView: 'admin',
       metadata: { orderId, productTitle: target.sellerName },
     });
@@ -1159,7 +1169,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         addNewProduct,
         processCheckout,
         cancelOrder,
-        requestReturn,
+        openDispute,
         addAddress,
         removeAddress,
         goToStateFilter,

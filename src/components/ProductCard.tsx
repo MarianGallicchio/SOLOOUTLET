@@ -100,6 +100,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         >
           <Camera className="w-3.5 h-3.5" /> Fotos reales del lote
         </button>
+        <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-600 text-white text-[10px] font-extrabold uppercase tracking-wide shadow-md pointer-events-none">
+          <Camera className="w-3 h-3" /> 100% reales
+        </span>
       </div>
 
       {/* Body */}
@@ -149,7 +152,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         {/* Trust row */}
         <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-          <span>Mercado Pago · Garantía {product.warrantyDays} días</span>
+          <span>Mercado Pago · Garantía del fabricante {product.warrantyDays} días · Venta final</span>
         </div>
 
         {/* Actions */}

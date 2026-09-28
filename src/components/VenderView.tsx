@@ -148,7 +148,7 @@ export const VenderView: React.FC = () => {
 
     const specsArray = form.specs
       ? form.specs.split(',').map((s) => s.trim()).filter(Boolean)
-      : ['Verificado por comercio', 'Embalaje protegido', 'Garantía oficial'];
+      : ['Verificado por comercio', 'Embalaje protegido', 'Garantía del fabricante'];
 
     const photoList = Object.values(photos).filter(Boolean);
 
