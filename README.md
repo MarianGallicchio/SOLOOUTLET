@@ -2,23 +2,44 @@
 
 Marketplace vertical donde comercios liquidan devoluciones, productos sin caja,
 con detalles estéticos o reacondicionados, con transparencia total de estado
-(Sistema de Grados A/B/C), pagos simulados estilo Mercado Pago y liquidación
-automática de comisiones a vendedores.
+(Sistema de Grados A/B/C), **pagos reales con split de Mercado Pago** y
+liquidación automática de comisiones a vendedores.
 
-Stack: **React 19 + Vite 8 + Tailwind CSS 4 + TypeScript** (sin backend todavía;
-los datos viven en `localStorage` a través de una capa lista para migrar a API).
+Stack: **React 19 + Vite 8 + Tailwind CSS 4 + TypeScript** + **backend Express + MySQL/MariaDB**
+con **Mercado Pago Marketplace** (OAuth por vendedor + `marketplace_fee`).
 
-## Puesta en marcha (cualquier editor)
+## Arquitectura
+
+- **Frontend** (`src/`): React + Vite. Con `VITE_API_URL` definido habla con la API;
+  sin él, y solo en desarrollo o con `?demo=1`, funciona en modo demo (localStorage).
+  **En producción el modo demo está bloqueado**: sin backend no hay pagos reales ni roles confiables.
+- **Backend** (`server/`): Express + MySQL con JWT + bcrypt. Toda regla de dinero
+  y de roles se valida en el servidor (la UI nunca decide comisiones ni permisos).
+- **Roles en la base**: `users.role` = `buyer` / `seller` / `admin` (+ `seller_status`
+  = `pending` / `approved` / `rejected` para vendedores). Nada de listas de emails en el front.
+- **Split de pagos MP**: cada vendedor vincula su Mercado Pago por OAuth
+  (tokens cifrados AES-256-GCM en `seller_profiles`); el checkout crea la
+  preferencia **con el token del vendedor** y `marketplace_fee` = comisión de
+  solooutlet (10% hasta $50.000, 8% por encima — calculada SIEMPRE en el backend).
+  MP acredita cada parte directo en su cuenta: sin transferencias manuales.
+  El módulo de liquidaciones queda como registro de lo cobrado.
+- **Webhook verificado**: `POST /api/webhooks/mercadopago` consulta el pago a la API
+  de MP antes de acreditar; nunca confía en redirecciones ni payloads.
+- La comisión de procesamiento de Mercado Pago se la descuenta MP directamente
+  al vendedor; la plataforma no la vuelve a restar (sin doble conteo).
+
+## Puesta en marcha
+
+Ver [SETUP.md](SETUP.md) para la guía completa (MySQL, .env, Mercado Pago,
+webhook y flujo de venta). Resumen:
 
 ```bash
-bun install
-bun run dev      # http://localhost:3000
-bun run build    # genera dist/
-bun run lint     # tsc --noEmit
+mysql -u root -p < server/schema.sql
+mysql -u root -p solooutlet < server/migrations/002_marketplace_split.sql
+cp .env.example .env        # completar MySQL + MP + Google
+npm install
+npm run dev:all             # frontend :3000 + API :3001
 ```
-
-> Alternativa con npm: `npm install --legacy-peer-deps` (flag necesario por
-> un conflicto entre `vite@8` y `esbuild`; ver `package.json`: `esbuild ^0.28.2`).
 
 ## Roles
 
@@ -30,13 +51,12 @@ bun run lint     # tsc --noEmit
 
 ## Accesos (listos para DB)
 
-- Cuentas separadas por email: **comprador** (`buyer`) y **vendedor**
-  (`merchant_approved` + `storeName`). Un email puede ser empleado de una
-  tienda sin ser dueño (invitación por email + rol).
-- Todo el auth pasa por `src/data/auth.ts` (`login`, `registerBuyer`,
-  `registerSeller`, `updateUser`, `logout`, `restoreSession`) con sesión
-  persistida. Hoy usa `localStorage`; con `VITE_API_URL` habla a
-  `POST /auth/*`, `GET /auth/me` y `PATCH /users/me` sin tocar el resto.
+- Roles en la base de datos: **comprador** (`buyer`), **vendedor** (`seller` con
+  `seller_status`: `pending` → aprobación del admin → `approved`) y **admin**
+  (campo en la tabla `users`, no una lista de emails en el frontend).
+- Un vendedor recién con `approved` puede vincular su Mercado Pago (OAuth) y publicar.
+- Todo el auth pasa por `src/data/auth.ts`; en modo API habla con
+  `POST /api/auth/*` (email+bcrypt y Google Sign-In) y sesiona con JWT (7 días).
 - Entradas: compradores por "Ingresar" (Navbar/móvil); vendedores por
   "Acceso vendedores" (footer Comercios), pestaña comercio del AuthModal
   o "Mi Tienda" una vez registrados.
@@ -52,16 +72,23 @@ src/
     mockData.ts           # catálogo y pedidos seed
     db.ts                 # CAPA DE DATOS: load/persist/forget (hoy localStorage)
   utils/
-    commissions.ts        # comisión 8%, cupones, envíos, settlement
-    sellerWorkspace.ts    # roles, permisos, PLATFORM_OWNER_EMAILS
+    commissions.ts        # comisión 8–10%, cupones, envíos, settlement
+    sellerWorkspace.ts    # permisos de workspace (solo modo demo; en API decide el backend)
     formatters.ts         # moneda ARS, badges, grados
   components/             # vistas comprador + workspace vendedor + admin
+server/
+  index.js                # API Express: auth JWT, órdenes, checkout MP, webhooks
+  mpOAuth.js              # OAuth MP por vendedor (tokens cifrados AES-256-GCM)
+  routes/marketplace.js   # connect/callback/status MP + aprobación admin
+  schema.sql, migrations/ # base MySQL unificada
 ```
 
 ## Reglas de negocio clave
 
-- **Comisión**: 8% automática por venta (mínimo $100) + costo de pasarela.
-  El neto queda `pendiente` y se transfiere al CBU/alias del vendedor.
+- **Comisión**: 10% hasta $50.000, 8% por encima (mínimo $100), retenida vía
+  `marketplace_fee` en el split de Mercado Pago. MP descuenta su comisión de
+  procesamiento directamente al vendedor (sin doble conteo). Sin transferencias
+  manuales: el reparto ocurre en el momento del pago.
 - **Venta final**: sin devoluciones ni cambios. Solo se admite `dispute`
   (fraude o error grave) en pedidos entregados.
 - **Garantía**: siempre del fabricante, nunca del vendedor.

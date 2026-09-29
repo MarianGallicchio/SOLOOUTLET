@@ -8,9 +8,11 @@
  *   que el admin los marca como transferidos.
  *
  * COMISIÓN ESCALONADA por precio de venta (el % aplica sobre el total cobrado):
- *   · Hasta $50.000  → 15%
- *   · $50.001–$200.000 → 12%
- *   · Más de $200.000 → 10%
+ *   · Hasta $50.000  → 10%
+ *   · Más de $50.000 → 8%
+ * Con el split de Mercado Pago (marketplace_fee), MP descuenta su propia comisión
+ * de procesamiento directamente al vendedor: la plataforma NO suma además el
+ * "costo de pasarela" al neto (evita doble conteo).
  *
  * Integración futura Mercado Pago:
  * - Reemplazar `simulateTransfer()` por la API de transferencias MP
@@ -19,9 +21,8 @@
  */
 
 export const COMMISSION_TIERS = [
-  { upTo: 50_000, rate: 0.15, label: 'Hasta $50.000' },
-  { upTo: 200_000, rate: 0.12, label: '$50.001 a $200.000' },
-  { upTo: Infinity, rate: 0.1, label: 'Más de $200.000' },
+  { upTo: 50_000, rate: 0.1, label: 'Hasta $50.000' },
+  { upTo: Infinity, rate: 0.08, label: 'Más de $50.000' },
 ] as const;
 
 /** Tasa de comisión según el precio bruto de la venta. */
@@ -31,9 +32,9 @@ export function commissionRateFor(gross: number): number {
 
 export const COMMISSION_CONFIG = {
   /** % máximo de referencia (comisión de tickets chicos). */
-  rate: 0.15,
+  rate: 0.1,
   /** Rango mostrado al público/comercios. */
-  rateLabel: '10% a 15% según el monto de la venta',
+  rateLabel: '8% a 10% según el monto de la venta',
   /** Mínimo retenido por operación (evita micro-comisiones de $0) */
   minFee: 100,
   /** Días de encaje / clearing antes de liberar el pago al vendedor */
@@ -66,9 +67,10 @@ export function resolveShipping(option: 'standard' | 'express', subtotal: number
   return subtotal > o.freeOver ? 0 : o.cost;
 }
 
-/** Costo estimado de pasarela por método (lo absorbe el vendedor, se descuenta del neto). */
+/** Costo de pasarela por método. Con split MP, la comisión MP la descuenta MP
+ * directamente al vendedor: mercadopago = 0 acá para no contarla dos veces. */
 export const GATEWAY_COST: Record<string, number> = {
-  mercadopago: 0.0599, // 5.99% + IVA aprox MP Argentina (referencia)
+  mercadopago: 0,
   credit_card: 0.049,
   debit_card: 0.029,
   transfer: 0,

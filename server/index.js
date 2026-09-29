@@ -63,12 +63,14 @@ app.use('/api', marketplaceRoutes);
 
 // ── Utilidades ──
 const j = (v, fb) => (v == null ? fb : typeof v === 'string' ? JSON.parse(v) : v);
-const rateFor = (gross) => (gross <= 50000 ? 0.15 : gross <= 200000 ? 0.12 : 0.1);
+const rateFor = (gross) => (gross <= 50000 ? 0.1 : 0.08);
 const calcSettlement = (gross, method, rate) => {
   const safeGross = Math.max(0, Math.round(gross));
   const eff = rate ?? rateFor(safeGross);
-  const GATEWAY = { mercadopago: 0.0599, credit_card: 0.049, debit_card: 0.029, transfer: 0 };
   const platformFee = safeGross > 0 ? Math.max(Math.round(safeGross * eff), 100) : 0;
+  // Con split de Mercado Pago (marketplace_fee), MP descuenta su comisión de
+  // procesamiento directamente al vendedor: acá NO se vuelve a restar (evita doble conteo).
+  const GATEWAY = { mercadopago: 0, credit_card: 0.049, debit_card: 0.029, transfer: 0 };
   const gatewayFee = Math.round(safeGross * (GATEWAY[method] ?? 0));
   return { gross: safeGross, platformFee, gatewayFee, netPayout: Math.max(0, safeGross - platformFee - gatewayFee), rateApplied: eff };
 };
