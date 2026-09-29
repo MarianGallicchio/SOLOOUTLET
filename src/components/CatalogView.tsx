@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { ConditionType, CategoryType, Product } from '../types';
 import { isMerchant } from '../utils/sellerWorkspace';
+import { hasConsentFor, saveCatalogPrefs, getCatalogPrefs } from '../utils/cookies';
 
 export type SortOptionType = 'recommended' | 'price-asc' | 'price-desc' | 'newest' | 'discount';
 
@@ -196,6 +197,25 @@ export const CatalogView: React.FC = () => {
       setSelectedTagFilter(selectedCategoryFilter);
     }
   }, [selectedCategoryFilter]);
+
+  // Preferencias del catálogo (cookie "Preferencias"): restaurar antes de renderizar (sin parpadeo)
+  const prefsRestored = useRef(false);
+  if (!prefsRestored.current) {
+    prefsRestored.current = true;
+    const saved = getCatalogPrefs() as { sort?: SortOptionType; tag?: string | null; minDiscount?: number; priceRange?: typeof priceRange } | null;
+    if (saved) {
+      if (saved.sort) setSortOption(saved.sort);
+      if (saved.tag) setSelectedTagFilter(saved.tag);
+      if (typeof saved.minDiscount === 'number') setMinDiscount(saved.minDiscount);
+      if (saved.priceRange) setPriceRange(saved.priceRange);
+    }
+  }
+
+  // Guardar preferencias al cambiar (solo con consentimiento)
+  useEffect(() => {
+    if (!hasConsentFor('preferences')) return;
+    saveCatalogPrefs({ sort: sortOption, tag: selectedTagFilter, minDiscount, priceRange });
+  }, [sortOption, selectedTagFilter, minDiscount, priceRange]);
 
   // Click handler for Tag Filter
   const handleTagClick = (tagId: string) => {

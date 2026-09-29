@@ -18,10 +18,23 @@ import { CheckoutModal } from './components/CheckoutModal';
 import { AuthModal } from './components/AuthModal';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { Footer } from './components/Footer';
+import { CookieConsent } from './components/CookieConsent';
+import { captureUtm, getCartCookie, getRememberedUser } from './utils/cookies';
+import { useEffect as useSideEffect } from 'react';
 
 const AppContent: React.FC = () => {
   const { currentView, currentUser } = useStore();
   const seller = isMerchant(currentUser);
+
+  // Cookies: capturar utm_ y sincronizar carrito cookie↔estado al arrancar
+  useSideEffect(() => {
+    captureUtm();
+    const remembered = getRememberedUser();
+    if (remembered) {
+      // Autocompletar email en el modal de login (preferencias)
+      window.sessionStorage.setItem('so_remembered_email', remembered.email);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAFC] pb-16 md:pb-0">
@@ -51,6 +64,9 @@ const AppContent: React.FC = () => {
 
       {/* Footer */}
       <Footer />
+
+      {/* Consentimiento de cookies (banner + panel) */}
+      <CookieConsent />
 
       {/* Mobile Fixed Bottom Navigation */}
       <MobileBottomNav />

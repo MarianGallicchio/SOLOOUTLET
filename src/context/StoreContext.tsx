@@ -5,6 +5,10 @@ import { calcSettlement, releaseDateFrom, COMMISSION_CONFIG, resolveCoupon, reso
 import { DEFAULT_INTEGRATIONS } from '../utils/sellerWorkspace';
 import { load, persist, forget, isApiMode, API_URL } from '../data/db';
 import { auth, AuthSession } from '../data/auth';
+import {
+  getCartCookie, saveCartCookie, hasConsentFor, pushRecentlyViewed,
+  rememberUser, forgetRememberedUser, saveCatalogPrefs, getCatalogPrefs,
+} from '../utils/cookies';
 
 const INITIAL_USER: User | null = null;
 
@@ -213,6 +217,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     persist('solooutlet_cart', cart);
+    // Cookie de carrito (necesaria, 7 días): SOLO IDs y cantidades (límite 4 KB)
+    saveCartCookie(cart.map((i) => ({ id: i.product.id, qty: i.quantity })));
   }, [cart]);
 
   useEffect(() => {
@@ -470,6 +476,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const logoutUser = async (): Promise<void> => {
     await auth.logout();
+    forgetRememberedUser(); // limpia la cookie "Recordarme"
     setCurrentUser(null);
     showToast('Sesión cerrada');
     setCurrentView('home');
@@ -563,6 +570,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const openProductModal = (product: Product) => {
     setSelectedProductModal(product);
+    // Vistos recientemente (preferencias, últimos 10)
+    pushRecentlyViewed(product.id);
   };
 
   const closeProductModal = () => {

@@ -7,6 +7,7 @@ import {
   Check, MessageCircle,
 } from 'lucide-react';
 import { PaymentBadges } from './PaymentIcons';
+import { openCookieSettings } from './CookieConsent';
 
 const NEWSLETTER_KEY = 'solooutlet_newsletter';
 
@@ -181,6 +182,14 @@ export const Footer: React.FC = () => {
           <div>© 2026 solooutlet. Todos los derechos reservados.</div>
           <div className="flex items-center gap-3">
             <span>Mercado oficial de liquidación y outlet para comercios verificados</span>
+            <button
+              type="button"
+              onClick={openCookieSettings}
+              className="hover:text-[#004AC6] transition-colors cursor-pointer font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+              title="Configuración de cookies y privacidad"
+            >
+              · Configuración de cookies
+            </button>
             {staff && (
               <button onClick={goAdminPanel} className="hover:text-[#004AC6] transition-colors cursor-pointer font-semibold" title="Panel staff SoloOutlet">
                 · Admin

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../context/StoreContext';
 import { CategoryType } from '../types';
+import { getRememberedUser, rememberUser } from '../utils/cookies';
 import {
   X,
   User,
@@ -58,12 +59,13 @@ export const AuthModal: React.FC = () => {
   const [sellerError, setSellerError] = useState<string | null>(null);
   const [merchantPassword, setMerchantPassword] = useState('');
 
-  // Buyer form state (vacío: sin datos de referencia)
-  const [buyerEmail, setBuyerEmail] = useState('');
+  // Buyer form state (vacío: sin datos de referencia; "Recordarme" autocompleta el email)
+  const [buyerEmail, setBuyerEmail] = useState(() => getRememberedUser()?.email || '');
   const [buyerName, setBuyerName] = useState('');
   const [buyerPassword, setBuyerPassword] = useState('');
   const [buyerError, setBuyerError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(() => !!getRememberedUser());
 
   // Merchant contact form state
   const [merchantForm, setMerchantForm] = useState({
@@ -90,7 +92,12 @@ export const AuthModal: React.FC = () => {
       if (!ok) setBuyerError('No pudimos crear la cuenta: revisá el mensaje arriba o probá con otro email.');
     } else {
       const user = await loginUser(buyerEmail.trim(), undefined, buyerPassword);
-      if (!user) setBuyerError('Email o contraseña incorrectos. Si no tenés cuenta, creala abajo.');
+      if (!user) {
+        setBuyerError('Email o contraseña incorrectos. Si no tenés cuenta, creala abajo.');
+      } else if (rememberMe) {
+        // "Recordarme": cookie de preferencias con token aleatorio (30 días)
+        rememberUser(user.email);
+      }
     }
   };
 
@@ -252,6 +259,18 @@ export const AuthModal: React.FC = () => {
 
               {buyerError && (
                 <p className="text-[11px] text-rose-600 font-semibold bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">{buyerError}</p>
+              )}
+
+              {buyerMode === 'login' && (
+                <label className="flex items-center gap-2 cursor-pointer select-none text-[11px] font-semibold text-slate-600">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 cursor-pointer"
+                  />
+                  Recordarme en este dispositivo (30 días)
+                </label>
               )}
 
               <button
