@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../context/StoreContext';
 import { CategoryType } from '../types';
 import { getRememberedUser, rememberUser } from '../utils/cookies';
+import { KeyRound } from 'lucide-react';
 import {
   X,
   User,
@@ -21,7 +22,7 @@ import {
 } from 'lucide-react';
 
 export const AuthModal: React.FC = () => {
-  const { isAuthModalOpen, setIsAuthModalOpen, authInitialTab, loginUser, registerBuyer, loginWithGoogle, submitMerchantApplication } = useStore();
+  const { isAuthModalOpen, setIsAuthModalOpen, authInitialTab, loginUser, registerBuyer, requestPasswordReset, resetPassword, loginWithGoogle, submitMerchantApplication } = useStore();
 
   // Google Identity Services: el Client ID lo inyecta el backend/.env vía VITE_GOOGLE_CLIENT_ID.
   const GOOGLE_CLIENT_ID = (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) || '';
@@ -67,6 +68,13 @@ export const AuthModal: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(() => !!getRememberedUser());
 
+  // Recuperación de contraseña: email → código → nueva contraseña
+  const [resetStep, setResetStep] = useState<'idle' | 'email' | 'code'>('idle');
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetCode, setResetCode] = useState('');
+  const [resetNewPass, setResetNewPass] = useState('');
+  const [resetError, setResetError] = useState<string | null>(null);
+
   // Merchant contact form state
   const [merchantForm, setMerchantForm] = useState({
     storeName: '',
@@ -98,6 +106,38 @@ export const AuthModal: React.FC = () => {
         // "Recordarme": cookie de preferencias con token aleatorio (30 días)
         rememberUser(user.email);
       }
+    }
+  };
+
+  const handleResetRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetError(null);
+    if (!resetEmail.trim()) { setResetError('Ingresá tu email.'); return; }
+    try {
+      const { code, viaEmail } = await requestPasswordReset(resetEmail.trim());
+      setResetStep('code');
+      if (!viaEmail && code) {
+        // Modo demo (sin servidor de email): mostramos el código acá.
+        setResetError(`Modo demostración (sin servidor de email): tu código es ${code}. En producción llega por correo y nunca se muestra en pantalla.`);
+      }
+    } catch (err) {
+      setResetError(err instanceof Error ? err.message : 'No pudimos procesar la solicitud.');
+    }
+  };
+
+  const handleResetConfirm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetError(null);
+    if (resetCode.length !== 6) { setResetError('El código tiene 6 dígitos.'); return; }
+    if (resetNewPass.length < 6) { setResetError('La nueva contraseña debe tener al menos 6 caracteres.'); return; }
+    const ok = await resetPassword(resetEmail.trim(), resetCode, resetNewPass);
+    if (ok) {
+      setResetStep('idle');
+      setResetEmail(''); setResetCode(''); setResetNewPass('');
+      setBuyerEmail(resetEmail);
+      setBuyerMode('login');
+    } else {
+      setResetError('Revisá el código e intentá de nuevo (el aviso aparece abajo).');
     }
   };
 
@@ -185,6 +225,8 @@ export const AuthModal: React.FC = () => {
         {activeTab === 'buyer' ? (
           <div className="p-6 sm:p-8 space-y-6">
             
+            {resetStep === 'idle' ? (
+            <>
             <div className="text-center max-w-sm mx-auto">
               <h3 className="text-lg font-bold text-slate-900 font-display">
                 {buyerMode === 'login' ? 'Iniciar sesión como comprador' : 'Crear cuenta de comprador'}
@@ -262,15 +304,24 @@ export const AuthModal: React.FC = () => {
               )}
 
               {buyerMode === 'login' && (
-                <label className="flex items-center gap-2 cursor-pointer select-none text-[11px] font-semibold text-slate-600">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 cursor-pointer"
-                  />
-                  Recordarme en este dispositivo (30 días)
-                </label>
+                <div className="flex items-center justify-between gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer select-none text-[11px] font-semibold text-slate-600">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 cursor-pointer"
+                    />
+                    Recordarme (30 días)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => { setResetStep('email'); setResetEmail(buyerEmail); setResetError(null); }}
+                    className="text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer"
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </button>
+                </div>
               )}
 
               <button
@@ -293,6 +344,104 @@ export const AuthModal: React.FC = () => {
                 </button>
               </div>
             </form>
+            </>
+            ) : (
+              /* ── RECUPERACIÓN DE CONTRASEÑA ── */
+              <div className="max-w-sm mx-auto space-y-4">
+                <div className="text-center">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-3">
+                    <KeyRound className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 font-display">
+                    {resetStep === 'email' ? 'Recuperar contraseña' : 'Código de verificación'}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {resetStep === 'email'
+                      ? 'Ingresá el email de tu cuenta y te enviamos un código de 6 dígitos (válido 10 minutos).'
+                      : `Ingresá el código que enviamos a ${resetEmail} y tu nueva contraseña.`}
+                  </p>
+                </div>
+
+                {resetStep === 'email' ? (
+                  <form onSubmit={handleResetRequest} className="space-y-3.5">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 mb-1">Email de tu cuenta</label>
+                      <input
+                        type="email"
+                        required
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        placeholder="tu@email.com"
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600"
+                      />
+                    </div>
+                    {resetError && (
+                      <p className="text-[11px] text-amber-800 font-semibold bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">{resetError}</p>
+                    )}
+                    <button
+                      type="submit"
+                      className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-500/20 active:scale-98 cursor-pointer"
+                    >
+                      <KeyRound className="w-4 h-4" />
+                      <span>Enviar código de recuperación</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setResetStep('idle'); setResetError(null); }}
+                      className="w-full text-center text-xs text-slate-500 hover:text-slate-800 cursor-pointer"
+                    >
+                      ← Volver a iniciar sesión
+                    </button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleResetConfirm} className="space-y-3.5">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 mb-1">Código de 6 dígitos</label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={6}
+                        required
+                        value={resetCode}
+                        onChange={(e) => setResetCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        placeholder="123456"
+                        className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600 text-center font-mono font-bold tracking-[0.4em]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 mb-1">Nueva contraseña</label>
+                      <input
+                        type="password"
+                        required
+                        minLength={6}
+                        value={resetNewPass}
+                        onChange={(e) => setResetNewPass(e.target.value)}
+                        placeholder="Mínimo 6 caracteres"
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600"
+                      />
+                    </div>
+                    {resetError && (
+                      <p className="text-[11px] font-semibold bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-amber-800">{resetError}</p>
+                    )}
+                    <button
+                      type="submit"
+                      className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-500/20 active:scale-98 cursor-pointer"
+                    >
+                      <KeyRound className="w-4 h-4" />
+                      <span>Actualizar contraseña</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setResetStep('email'); setResetCode(''); setResetNewPass(''); setResetError(null); }}
+                      className="w-full text-center text-xs text-slate-500 hover:text-slate-800 cursor-pointer"
+                    >
+                      ← Usar otro email
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
 
           </div>
         ) : (

@@ -74,6 +74,10 @@ interface StoreContextType {
   loginUser: (email: string, fullName?: string, password?: string) => Promise<User | null>;
   /** Registro real de comprador con validación de cuenta/contraseña. */
   registerBuyer: (input: { fullName: string; email: string; password: string }) => Promise<User | null>;
+  /** Recuperación de contraseña: genera y devuelve código (demo) o lo envía por email (producción). */
+  requestPasswordReset: (email: string) => Promise<{ code: string; viaEmail: boolean }>;
+  /** Confirma el código y cambia la contraseña. */
+  resetPassword: (email: string, code: string, newPassword: string) => Promise<boolean>;
   /** Login con Google: envía el ID token al backend, que lo verifica y crea/sesiona en MySQL. */
   loginWithGoogle: (credential: string) => Promise<User | null>;
   logoutUser: () => Promise<void>;
@@ -426,6 +430,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (e) {
       showToast(`⚠️ ${e instanceof Error ? e.message : 'No pudimos iniciar sesión.'}`);
       return null;
+    }
+  };
+
+  const requestPasswordReset = async (email: string): Promise<{ code: string; viaEmail: boolean }> => {
+    return auth.requestPasswordReset(email);
+  };
+
+  const resetPassword = async (email: string, code: string, newPassword: string): Promise<boolean> => {
+    try {
+      await auth.resetPassword(email, code, newPassword);
+      showToast('✓ Contraseña actualizada. Ya podés iniciar sesión.');
+      return true;
+    } catch (e) {
+      showToast(`⚠️ ${e instanceof Error ? e.message : 'No pudimos actualizar la contraseña.'}`);
+      return false;
     }
   };
 
@@ -1209,6 +1228,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         currentUser,
         loginUser,
         registerBuyer,
+        requestPasswordReset,
+        resetPassword,
         loginWithGoogle,
         logoutUser,
         updateUserProfile,

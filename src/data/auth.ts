@@ -25,6 +25,9 @@ import { isApiMode, load, persist, forget } from './db';
 const USERS_KEY = 'solooutlet_auth_users';
 const SECRETS_KEY = 'solooutlet_auth_secrets';
 const SESSION_KEY = 'solooutlet_auth_session';
+const RESETS_KEY = 'solooutlet_auth_resets';
+
+interface PendingReset { code: string; expiresAt: number; attempts: number }
 
 /** Valor del campo password cuando el usuario no lo tocó (no se valida). */
 export const AUTH_PASSWORD_PLACEHOLDER = '••••••••';
@@ -56,6 +59,10 @@ export interface AuthBackend {
   /** Sesión guardada (recargas). null = invitado (la app usa cuenta demo). */
   restoreSession(): Promise<User | null>;
   findByEmail(email: string): Promise<User | null>;
+  /** Recuperación de contraseña: genera código de 6 dígitos (10 min). En producción lo envía el backend por email; acá se devuelve para la demo. */
+  requestPasswordReset(email: string): Promise<{ code: string; viaEmail: boolean }>;
+  /** Cambia la contraseña validando el código. */
+  resetPassword(email: string, code: string, newPassword: string): Promise<void>;
 }
 
 /** Hash DEMO (FNV-1a, NO criptográfico). En producción: bcrypt/argon2 en el servidor. */
@@ -95,6 +102,52 @@ class LocalAuthBackend implements AuthBackend {
 
   async findByEmail(email: string): Promise<User | null> {
     return this.users().find((u) => norm(u.email) === norm(email)) ?? null;
+  }
+
+  async requestPasswordReset(email: string): Promise<{ code: string; viaEmail: boolean }> {
+    const user = await this.findByEmail(email);
+    if (!user) {
+      // No revelar si el email existe o no (buena práctica)
+      throw new Error('Si existe una cuenta con ese email, vas a recibir el código. Revisá también tu configuración.');
+    }
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const resets = load(RESETS_KEY, {} as Record<string, PendingReset>);
+    resets[norm(email)] = { code: demoHash(code), expiresAt: Date.now() + 10 * 60 * 1000, attempts: 0 };
+    persist(RESETS_KEY, resets);
+    // Demo: sin servidor de email, el código se muestra en pantalla.
+    // Producción: el backend lo envía por email y NUNCA lo devuelve al front.
+    return { code, viaEmail: false };
+  }
+
+  async resetPassword(email: string, code: string, newPassword: string): Promise<void> {
+    if (!newPassword || newPassword.length < 6) {
+      throw new Error('La nueva contraseña debe tener al menos 6 caracteres.');
+    }
+    const resets = load(RESETS_KEY, {} as Record<string, PendingReset>);
+    const pending = resets[norm(email)];
+    if (!pending) throw new Error('No hay una recuperación iniciada para este email.');
+    if (Date.now() > pending.expiresAt) {
+      delete resets[norm(email)];
+      persist(RESETS_KEY, resets);
+      throw new Error('El código venció (10 minutos). Pedí uno nuevo.');
+    }
+    if (pending.attempts >= 5) {
+      delete resets[norm(email)];
+      persist(RESETS_KEY, resets);
+      throw new Error('Demasiados intentos. Pedí un código nuevo.');
+    }
+    if (demoHash(code) !== pending.code) {
+      resets[norm(email)] = { ...pending, attempts: pending.attempts + 1 };
+      persist(RESETS_KEY, resets);
+      throw new Error('Código incorrecto.');
+    }
+    const user = await this.findByEmail(email);
+    if (!user) throw new Error('Cuenta no encontrada.');
+    const secrets = this.secrets();
+    secrets[user.id] = demoHash(newPassword);
+    persist(SECRETS_KEY, secrets);
+    delete resets[norm(email)];
+    persist(RESETS_KEY, resets);
   }
 
   async login(email: string, password?: string, _fullName = 'Comprador'): Promise<User> {
@@ -265,6 +318,29 @@ class ApiAuthBackend implements AuthBackend {
   }
   async findByEmail(): Promise<User | null> {
     return null; // en modo API no se expone búsqueda por email al front
+  }
+  async requestPasswordReset(email: string): Promise<{ code: string; viaEmail: boolean }> {
+    // Producción: el backend genera el código, lo hashea en DB y lo envía por email.
+    try {
+      const res = await fetch(`${API_URL}/auth/password-reset/request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (res.ok) return { code: '', viaEmail: true };
+    } catch { /* caer al mensaje genérico */ }
+    throw new Error('Si existe una cuenta con ese email, te enviamos el código por correo.');
+  }
+  async resetPassword(email: string, code: string, newPassword: string): Promise<void> {
+    const res = await fetch(`${API_URL}/auth/password-reset/confirm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code, newPassword }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      throw new Error((body as { error?: string })?.error || 'No pudimos actualizar la contraseña.');
+    }
   }
 }
 
