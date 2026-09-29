@@ -21,7 +21,7 @@ import {
 import { DEFAULT_LOCATIONS, POPULAR_LOCATION_SHORTCUTS } from '../data/locations';
 
 export const CheckoutModal: React.FC = () => {
-  const { cart, isCheckoutOpen, setIsCheckoutOpen, processCheckout, currentUser, setCurrentView, setHelpSection } = useStore();
+  const { cart, isCheckoutOpen, setIsCheckoutOpen, processCheckout, checkoutWithApi, currentUser, setCurrentView, setHelpSection } = useStore();
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>('mercadopago');
   const [shippingOption, setShippingOption] = useState<ShippingOption>('standard');
@@ -100,6 +100,28 @@ export const CheckoutModal: React.FC = () => {
       shippingOption,
       couponCode: coupon?.code,
     };
+
+    // Modo API (MySQL + Mercado Pago real): el backend crea la orden en la DB,
+    // calcula la comisión y devuelve la URL de pago de Mercado Pago.
+    if (checkoutWithApi) {
+      void (async () => {
+        try {
+          const result = await checkoutWithApi(customer, paymentDetails, coupon?.code);
+          setIsProcessing(false);
+          if (result?.initPoint) {
+            // Pago real: redirigir a Mercado Pago
+            window.location.href = result.initPoint;
+            return;
+          }
+          if (result?.orderNumber) {
+            processCheckout(customer, paymentDetails, coupon?.code); // flujo local de confirmación visual
+          }
+        } catch {
+          setIsProcessing(false);
+        }
+      })();
+      return;
+    }
 
     setTimeout(() => {
       processCheckout(customer, paymentDetails, coupon?.code);

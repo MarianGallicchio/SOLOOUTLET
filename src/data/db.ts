@@ -18,7 +18,7 @@
  * este archivo: el día de la migración se cambia UN archivo.
  */
 
-const API_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') || '';
+export const API_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') || '';
 export const isApiMode = API_URL.length > 0;
 
 /** Lee una colección (hoy: localStorage; mañana: GET). */

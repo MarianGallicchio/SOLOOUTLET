@@ -3,8 +3,8 @@ import { Product, CartItem, Order, CustomerData, PaymentDetails, ViewType, Revie
 import { INITIAL_PRODUCTS, INITIAL_ORDERS } from '../data/mockData';
 import { calcSettlement, releaseDateFrom, COMMISSION_CONFIG, resolveCoupon, resolveShipping } from '../utils/commissions';
 import { DEFAULT_INTEGRATIONS } from '../utils/sellerWorkspace';
-import { load, persist, forget } from '../data/db';
-import { auth } from '../data/auth';
+import { load, persist, forget, isApiMode, API_URL } from '../data/db';
+import { auth, AuthSession } from '../data/auth';
 
 const DEFAULT_USER: User = {
   id: 'usr-101',
@@ -115,6 +115,8 @@ interface StoreContextType {
   setHelpSection: (s: 'garantia' | 'envios' | 'terminos' | null) => void;
   addNewProduct: (productData: Omit<Product, 'id' | 'sku' | 'createdAt'>) => void;
   processCheckout: (customer: CustomerData, payment: PaymentDetails, couponCode?: string) => Order;
+  /** Modo API: crea la orden en MySQL y devuelve la URL de pago de Mercado Pago. null si no hay backend. */
+  checkoutWithApi: ((customer: CustomerData, payment: PaymentDetails, couponCode?: string) => Promise<{ initPoint?: string; orderNumber?: string } | null>) | null;
   cancelOrder: (orderId: string) => void;
   openDispute: (orderId: string, reason: DisputeReason) => void;
   addAddress: (address: Omit<SavedAddress, 'id'>) => void;
@@ -380,9 +382,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       prev.map((ord) => (ord.id === orderId ? { ...ord, status: newStatus } : ord)),
     );
 
+    // Modo API (MySQL): el backend persiste el estado y crea la notificación
+    // para el COMPRADOR en la DB — la ve al abrir la app o recargar.
+    if (isApiMode) {
+      void fetch(`${API_URL}/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${load<AuthSession | null>('solooutlet_auth_session', null)?.token ?? ''}` },
+        body: JSON.stringify({ status: newStatus }),
+      }).catch(() => {});
+    }
+
     const statusNames: Record<string, string> = {
       en_preparacion: 'En preparación en depósito',
-      despachado: 'Despachado con seguimiento en viaje',
+      despachado: 'Despachado — el vendedor confirmó el envío y tu compra está en camino 🚚',
       completado: 'Entregado al comprador con éxito',
       cancelado: 'Cancelado con reintegro en curso',
     };
@@ -1168,6 +1180,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setHelpSection,
         addNewProduct,
         processCheckout,
+        checkoutWithApi: isApiMode
+          ? async (customer, payment, couponCode) => {
+              try {
+                const session = load<AuthSession | null>('solooutlet_auth_session', null);
+                const res = await fetch(`${API_URL}/checkout`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.token ?? ''}` },
+                  body: JSON.stringify({ customer, items: cart, shippingOption: payment.shippingOption, couponCode }),
+                });
+                if (!res.ok) return null;
+                return (await res.json()) as { initPoint?: string; orderNumber?: string };
+              } catch {
+                return null;
+              }
+            }
+          : null,
         cancelOrder,
         openDispute,
         addAddress,
