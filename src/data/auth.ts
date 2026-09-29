@@ -83,8 +83,8 @@ class LocalAuthBackend implements AuthBackend {
   }
   private checkPassword(userId: string, password?: string) {
     const stored = this.secrets()[userId];
-    if (!stored) return; // cuenta sin clave (demo / creada por invitación)
-    if (!password) return; // login sin clave: se permite en modo demo
+    if (!stored) return; // cuenta sin clave (creada por invitación): se permite entrar
+    if (!password) throw new Error('Ingresá tu contraseña para entrar.');
     if (demoHash(password) !== stored) throw new Error('Contraseña incorrecta para este email.');
   }
   private startSession(user: User): User {
@@ -97,18 +97,22 @@ class LocalAuthBackend implements AuthBackend {
     return this.users().find((u) => norm(u.email) === norm(email)) ?? null;
   }
 
-  async login(email: string, password?: string, fullName = 'Comprador'): Promise<User> {
+  async login(email: string, password?: string, _fullName = 'Comprador'): Promise<User> {
     const existing = await this.findByEmail(email);
-    if (!existing) return this.registerBuyer({ fullName, email, password });
+    if (!existing) {
+      throw new Error('No existe una cuenta con ese email. Registrate primero desde "Crear cuenta".');
+    }
     this.checkPassword(existing.id, password);
     return this.startSession(existing);
   }
 
   async registerBuyer(input: RegisterBuyerInput): Promise<User> {
+    if (!input.password || input.password.length < 6) {
+      throw new Error('La contraseña debe tener al menos 6 caracteres.');
+    }
     const existing = await this.findByEmail(input.email);
     if (existing) {
-      this.checkPassword(existing.id, input.password);
-      return this.startSession(existing);
+      throw new Error('Ya existe una cuenta con ese email. Iniciá sesión con tu contraseña.');
     }
     const user: User = {
       id: `usr-${Date.now()}`,
@@ -131,7 +135,13 @@ class LocalAuthBackend implements AuthBackend {
   }
 
   async registerSeller(input: RegisterSellerInput): Promise<User> {
+    if (!input.password || input.password.length < 6) {
+      throw new Error('La contraseña debe tener al menos 6 caracteres.');
+    }
     const existing = await this.findByEmail(input.email);
+    if (existing && existing.role === 'merchant_approved') {
+      throw new Error(`Ya existe una tienda con ese email ("${existing.storeName}"). Ingresá desde "Ya tengo cuenta".`);
+    }
     const base: User = existing ?? {
       id: `usr-${Date.now()}`,
       fullName: input.fullName.trim() || input.storeName,
@@ -143,7 +153,7 @@ class LocalAuthBackend implements AuthBackend {
       role: 'buyer',
       createdAt: new Date().toISOString().split('T')[0],
     };
-    if (existing) this.checkPassword(existing.id, input.password);
+    if (existing) this.checkPassword(existing.id, input.password); // sube de comprador a vendedor: valida su clave
     const seller: User = { ...base, role: 'merchant_approved', storeName: input.storeName };
     const users = this.users();
     this.saveUsers(users.some((u) => u.id === seller.id) ? users.map((u) => (u.id === seller.id ? seller : u)) : [...users, seller]);

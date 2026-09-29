@@ -68,6 +68,8 @@ interface StoreContextType {
   // User Profile & Authentication (vía servicio `auth`, listo para DB)
   currentUser: User | null;
   loginUser: (email: string, fullName?: string, password?: string) => Promise<User | null>;
+  /** Registro real de comprador con validación de cuenta/contraseña. */
+  registerBuyer: (input: { fullName: string; email: string; password: string }) => Promise<User | null>;
   /** Login con Google: envía el ID token al backend, que lo verifica y crea/sesiona en MySQL. */
   loginWithGoogle: (credential: string) => Promise<User | null>;
   logoutUser: () => Promise<void>;
@@ -79,7 +81,7 @@ interface StoreContextType {
 
   // Merchant Onboarding & Contact
   merchantApplications: MerchantApplication[];
-  submitMerchantApplication: (data: Omit<MerchantApplication, 'id' | 'date' | 'status'>) => Promise<void>;
+  submitMerchantApplication: (data: Omit<MerchantApplication, 'id' | 'date' | 'status'>, password?: string) => Promise<void>;
 
   // In-product Live Merchant Chat
   productChats: Record<string, ChatMessage[]>;
@@ -403,15 +405,33 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }).catch(() => {});
   }, []);
 
-  const loginUser = async (email: string, fullName = 'Comprador', password?: string): Promise<User | null> => {
+  const loginUser = async (email: string, _fullName?: string, password?: string): Promise<User | null> => {
     try {
-      const user = await auth.login(email, password, fullName);
+      const user = await auth.login(email, password, _fullName);
       setCurrentUser(user);
       setIsAuthModalOpen(false);
       showToast(`✓ Bienvenido/a, ${user.fullName}`);
+      // Vendedor: directo a su panel de tienda
+      if (user.role === 'merchant_approved' || user.storeName) {
+        createSellerWorkspace(user.storeName || 'Mi Tienda', user.email);
+        setCurrentView('seller-workspace');
+      }
       return user;
     } catch (e) {
       showToast(`⚠️ ${e instanceof Error ? e.message : 'No pudimos iniciar sesión.'}`);
+      return null;
+    }
+  };
+
+  const registerBuyer = async (input: { fullName: string; email: string; password: string }): Promise<User | null> => {
+    try {
+      const user = await auth.registerBuyer(input);
+      setCurrentUser(user);
+      setIsAuthModalOpen(false);
+      showToast(`✓ Cuenta creada. ¡Bienvenido/a a solooutlet, ${user.fullName.split(' ')[0]}!`);
+      return user;
+    } catch (e) {
+      showToast(`⚠️ ${e instanceof Error ? e.message : 'No pudimos crear la cuenta.'}`);
       return null;
     }
   };
@@ -485,7 +505,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return wishlist.includes(productId);
   };
 
-  const submitMerchantApplication = async (data: Omit<MerchantApplication, 'id' | 'date' | 'status'>): Promise<void> => {
+  const submitMerchantApplication = async (data: Omit<MerchantApplication, 'id' | 'date' | 'status'>, password?: string): Promise<void> => {
     // Modo API (MySQL): la solicitud queda PENDIENTE hasta que el admin la aprueba.
     if (isApiMode) {
       try {
@@ -526,6 +546,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         fullName: data.contactPerson.trim() || data.storeName,
         email: data.email,
         storeName: data.storeName,
+        password,
       });
       setCurrentUser(sellerUser);
     } catch (e) {
@@ -1178,6 +1199,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isInWishlist,
         currentUser,
         loginUser,
+        registerBuyer,
         loginWithGoogle,
         logoutUser,
         updateUserProfile,
