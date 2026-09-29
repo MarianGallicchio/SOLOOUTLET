@@ -17,6 +17,7 @@ import {
   FileText,
   Clock,
   Sparkles,
+  LogIn,
 } from 'lucide-react';
 
 export const AuthModal: React.FC = () => {
@@ -24,6 +25,11 @@ export const AuthModal: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'buyer' | 'merchant'>(authInitialTab);
   const [buyerMode, setBuyerMode] = useState<'login' | 'register'>('login');
+  // Modo de la pestaña vendedor: ingresar (cuenta existente) o solicitar admisión (nuevo comercio)
+  const [merchantMode, setMerchantMode] = useState<'login' | 'register'>('login');
+  const [sellerEmail, setSellerEmail] = useState('');
+  const [sellerPassword, setSellerPassword] = useState('');
+  const [sellerError, setSellerError] = useState<string | null>(null);
 
   // Buyer form state
   const [buyerEmail, setBuyerEmail] = useState('marianoagusting1996@gmail.com');
@@ -55,6 +61,21 @@ export const AuthModal: React.FC = () => {
     e.preventDefault();
     if (!merchantForm.storeName || !merchantForm.whatsapp) return;
     await submitMerchantApplication(merchantForm);
+  };
+
+  /** Login directo de un vendedor ya registrado (role merchant_approved + storeName). */
+  const handleSellerLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSellerError(null);
+    const user = await loginUser(sellerEmail.trim(), undefined, sellerPassword || undefined);
+    if (!user) {
+      setSellerError('No pudimos iniciar sesión. Revisá el email y la contraseña.');
+      return;
+    }
+    if (!user.storeName && user.role !== 'merchant_approved') {
+      // Existe la cuenta pero es comprador: le damos acceso a su panel igual (sin tienda creada)
+      setSellerError('');
+    }
   };
 
   return (
@@ -218,9 +239,81 @@ export const AuthModal: React.FC = () => {
 
           </div>
         ) : (
-          /* Tab 2: Vendedores (Merchant must contact us first) */
+          /* Tab 2: Vendedores — ingresar con cuenta existente o solicitar admisión */
           <div className="p-6 sm:p-8 space-y-6 max-h-[75vh] overflow-y-auto">
-            
+
+            {/* Sub-tabs: Ingresar / Registrar comercio */}
+            <div className="grid grid-cols-2 p-1 bg-slate-100/80 rounded-xl text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => { setMerchantMode('login'); setSellerError(null); }}
+                className={`py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  merchantMode === 'login' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                <LogIn className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Ya tengo cuenta</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMerchantMode('register'); setSellerError(null); }}
+                className={`py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  merchantMode === 'register' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                <Building2 className="w-3.5 h-3.5 text-blue-600" />
+                <span>Registrar mi comercio</span>
+              </button>
+            </div>
+
+            {merchantMode === 'login' ? (
+              /* ── Ingreso directo de vendedor registrado ── */
+              <form onSubmit={handleSellerLogin} className="space-y-3.5 max-w-sm mx-auto">
+                <div className="text-center">
+                  <h3 className="text-lg font-bold text-slate-900 font-display">Ingresar a Mi Tienda</h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Panel de vendedor: pedidos, stock, empleados, publicidad y liquidaciones.
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">Email de la empresa</label>
+                  <input
+                    type="email"
+                    required
+                    value={sellerEmail}
+                    onChange={(e) => setSellerEmail(e.target.value)}
+                    placeholder="ventas@tucomercio.com.ar"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">Contraseña</label>
+                  <input
+                    type="password"
+                    value={sellerPassword}
+                    onChange={(e) => setSellerPassword(e.target.value)}
+                    placeholder="Dejar vacío si tu cuenta no tiene clave"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-600"
+                  />
+                </div>
+                {sellerError && (
+                  <p className="text-[11px] text-rose-600 font-semibold">{sellerError}</p>
+                )}
+                <button
+                  type="submit"
+                  className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-600/20 active:scale-98 cursor-pointer mt-2"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>Ingresar al panel vendedor</span>
+                </button>
+                <p className="text-[11px] text-slate-400 text-center">
+                  ¿Comercio nuevo? Usá la pestaña <strong>Registrar mi comercio</strong>.
+                </p>
+              </form>
+            ) : (
+            /* ── Solicitud de admisión (nuevo comercio) ── */
+            <>
+
             {/* Strict Notice: Sellers must contact us first */}
             <div className="bg-amber-50 border border-amber-200/90 rounded-2xl p-4 text-xs text-amber-900 space-y-2">
               <div className="flex items-center gap-2 font-bold text-amber-950">
@@ -228,7 +321,7 @@ export const AuthModal: React.FC = () => {
                 <span>Admisión Exclusiva para Comercios Verificados</span>
               </div>
               <p className="leading-relaxed text-amber-800">
-                La cuenta vendedora es <strong>separada de la de comprador</strong> y se crea al instante con el email de tu comercio: accedés a tu panel con pedidos, stock, equipo, publicidad y liquidaciones.
+                La cuenta vendedora es <strong>separada de la de comprador</strong> y se crea al instante con el email de tu comercio: después podés ingresar siempre desde <strong>“Ya tengo cuenta”</strong> con tu email y contraseña.
               </p>
             </div>
 
@@ -384,6 +477,8 @@ export const AuthModal: React.FC = () => {
 
               </form>
             </div>
+            </>
+            )}
 
           </div>
         )}

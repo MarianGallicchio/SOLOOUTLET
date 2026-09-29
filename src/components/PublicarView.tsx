@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useStore } from '../context/StoreContext';
 import { ConditionType, CategoryType, Product } from '../types';
 import { formatPrice, getConditionBadgeStyle } from '../utils/formatters';
-import { COMMISSION_CONFIG, calcSettlement } from '../utils/commissions';
+import { COMMISSION_CONFIG, commissionRateFor, calcSettlement } from '../utils/commissions';
 import { imgLaptop } from '../assets/images';
 import {
   Camera,
@@ -538,7 +538,7 @@ export const PublicarView: React.FC = () => {
     ? Math.round(((form.originalPrice - form.price) / form.originalPrice) * 100)
     : 0;
 
-  const commissionRate = COMMISSION_CONFIG.rate;
+  const commissionRate = commissionRateFor(form.price);
   const commissionAmount = calcSettlement(form.price, 'mercadopago', commissionRate).platformFee;
   const netEarnings = form.price - commissionAmount;
 
@@ -2028,7 +2028,7 @@ export const PublicarView: React.FC = () => {
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
               <div className="space-y-0.5">
                 <span className="font-bold text-slate-800">
-                  Comisión solooutlet transparente: 8% ({formatPrice(commissionAmount)})
+                  Comisión solooutlet transparente: {Math.round(commissionRate * 100)}% ({formatPrice(commissionAmount)})
                 </span>
                 <p className="text-slate-500 text-[11px]">
                   Incluye pasarela segura de cobro Mercado Pago y protección contra fraude.
@@ -2190,7 +2190,7 @@ export const PublicarView: React.FC = () => {
                 <span className="font-bold tabular-nums">{formatPrice(currentBoostCost)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Comisión de la plataforma (8% al concretar venta):</span>
+                <span>Comisión de la plataforma ({Math.round(commissionRate * 100)}% al concretar venta):</span>
                 <span className="font-bold tabular-nums">{formatPrice(commissionAmount)}</span>
               </div>
               <div className="flex justify-between pt-1 border-t border-blue-200 text-blue-950 font-extrabold text-sm">

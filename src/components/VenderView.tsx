@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useStore } from '../context/StoreContext';
 import { ConditionType, CategoryType } from '../types';
 import { formatPrice } from '../utils/formatters';
-import { COMMISSION_CONFIG, calcSettlement } from '../utils/commissions';
+import { COMMISSION_CONFIG, commissionRateFor, calcSettlement } from '../utils/commissions';
 import { isMerchant } from '../utils/sellerWorkspace';
 import { imgLaptop } from '../assets/images';
 import {
@@ -35,7 +35,7 @@ export const VenderView: React.FC = () => {
   const [calcDiscount, setCalcDiscount] = useState<number>(35);
 
   const estimatedSalePrice = Math.round(calcCost * (1 - calcDiscount / 100));
-  const feePercentage = COMMISSION_CONFIG.rate;
+  const feePercentage = commissionRateFor(estimatedSalePrice);
   const settlementPreview = calcSettlement(estimatedSalePrice, 'mercadopago', feePercentage);
   const marketplaceFee = settlementPreview.platformFee;
   const netEarnings = settlementPreview.netPayout;
@@ -359,7 +359,7 @@ export const VenderView: React.FC = () => {
                 </span>
               </div>
               <div className="flex justify-between text-slate-500">
-                <span>Comisión de plataforma (8%):</span>
+                <span>Comisión de plataforma ({Math.round(feePercentage * 100)}%):</span>
                 <span className="tabular-nums">- {formatPrice(marketplaceFee)}</span>
               </div>
               <div className="flex justify-between text-sm font-bold text-emerald-800 bg-emerald-50 p-3 rounded-xl mt-3 shadow-2xs">

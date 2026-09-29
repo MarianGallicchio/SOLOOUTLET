@@ -137,8 +137,8 @@ export const AdminSalesDashboard: React.FC = () => {
     }, 0);
 
     // Platform commissions & seller net payouts
-    const totalCommissions = validOrders.reduce((sum, o) => sum + (o.settlement?.platformFee ?? Math.round(o.total * 0.065)), 0);
-    const totalNetPayout = validOrders.reduce((sum, o) => sum + (o.settlement?.netPayout ?? Math.round(o.total * 0.935)), 0);
+    const totalCommissions = validOrders.reduce((sum, o) => sum + (o.settlement?.platformFee ?? Math.round(o.total * 0.12)), 0);
+    const totalNetPayout = validOrders.reduce((sum, o) => sum + (o.settlement?.netPayout ?? Math.round(o.total * 0.88)), 0);
 
     // Payment methods breakdown
     const paymentBreakdown = {
@@ -602,8 +602,8 @@ export const AdminSalesDashboard: React.FC = () => {
         o.paymentDetails.method,
         o.status,
         `"${(o.sellerName || o.items[0]?.product?.vendor || 'SoloOutlet').replace(/"/g, '""')}"`,
-        o.settlement?.platformFee || Math.round(o.total * 0.065),
-        o.settlement?.netPayout || Math.round(o.total * 0.935),
+        o.settlement?.platformFee || Math.round(o.total * 0.12),
+        o.settlement?.netPayout || Math.round(o.total * 0.88),
       ].join(',');
     });
 

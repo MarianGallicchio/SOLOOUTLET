@@ -7,15 +7,33 @@
  * - Los payouts se generan automáticamente y quedan pendientes hasta
  *   que el admin los marca como transferidos.
  *
+ * COMISIÓN ESCALONADA por precio de venta (el % aplica sobre el total cobrado):
+ *   · Hasta $50.000  → 15%
+ *   · $50.001–$200.000 → 12%
+ *   · Más de $200.000 → 10%
+ *
  * Integración futura Mercado Pago:
  * - Reemplazar `simulateTransfer()` por la API de transferencias MP
  *   (OAuth vendedor + `POST /v1/payments` con `application_fee`).
  * - El campo `settlement.platformFee` mapea directo a `application_fee`.
  */
 
+export const COMMISSION_TIERS = [
+  { upTo: 50_000, rate: 0.15, label: 'Hasta $50.000' },
+  { upTo: 200_000, rate: 0.12, label: '$50.001 a $200.000' },
+  { upTo: Infinity, rate: 0.1, label: 'Más de $200.000' },
+] as const;
+
+/** Tasa de comisión según el precio bruto de la venta. */
+export function commissionRateFor(gross: number): number {
+  return COMMISSION_TIERS.find((t) => gross <= t.upTo)?.rate ?? COMMISSION_TIERS[COMMISSION_TIERS.length - 1].rate;
+}
+
 export const COMMISSION_CONFIG = {
-  /** % que retiene SoloOutlet por cada venta (0.08 = 8%) */
-  rate: 0.08,
+  /** % máximo de referencia (comisión de tickets chicos). */
+  rate: 0.15,
+  /** Rango mostrado al público/comercios. */
+  rateLabel: '10% a 15% según el monto de la venta',
   /** Mínimo retenido por operación (evita micro-comisiones de $0) */
   minFee: 100,
   /** Días de encaje / clearing antes de liberar el pago al vendedor */
@@ -72,15 +90,17 @@ export interface OrderSettlement {
 export function calcSettlement(
   gross: number,
   method: string,
-  rate = COMMISSION_CONFIG.rate,
+  /** Opcional: tasa fija (p.ej. contrato especial de un vendedor). Si se omite, se usa el escalón correspondiente. */
+  rate?: number,
 ): OrderSettlement {
   const safeGross = Math.max(0, Math.round(gross));
-  const rawFee = Math.round(safeGross * rate);
+  const effectiveRate = rate ?? commissionRateFor(safeGross);
+  const rawFee = Math.round(safeGross * effectiveRate);
   const platformFee = safeGross > 0 ? Math.max(rawFee, COMMISSION_CONFIG.minFee) : 0;
   const gatewayRate = GATEWAY_COST[method] ?? 0;
   const gatewayFee = Math.round(safeGross * gatewayRate);
   const netPayout = Math.max(0, safeGross - platformFee - gatewayFee);
-  return { gross: safeGross, platformFee, gatewayFee, netPayout, rateApplied: rate };
+  return { gross: safeGross, platformFee, gatewayFee, netPayout, rateApplied: effectiveRate };
 }
 
 /** Fecha de liberación = fecha venta + clearingDays. */

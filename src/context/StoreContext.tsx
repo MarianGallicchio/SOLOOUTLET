@@ -137,7 +137,7 @@ interface StoreContextType {
 
   // User Profile & Authentication (vía servicio `auth`, listo para DB)
   currentUser: User | null;
-  loginUser: (email: string, fullName?: string, password?: string) => Promise<boolean>;
+  loginUser: (email: string, fullName?: string, password?: string) => Promise<User | null>;
   logoutUser: () => Promise<void>;
   updateUserProfile: (updated: Partial<User>) => Promise<void>;
   isAuthModalOpen: boolean;
@@ -203,7 +203,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const initialList = source.length > 0 ? source : INITIAL_ORDERS;
     return initialList.map((o) => {
       if (o.settlement) return o;
-      const settlement = calcSettlement(o.total, o.paymentDetails.method, COMMISSION_CONFIG.rate);
+      const settlement = calcSettlement(o.total, o.paymentDetails.method);
       return {
         ...o,
         settlement,
@@ -480,16 +480,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }).catch(() => {});
   }, []);
 
-  const loginUser = async (email: string, fullName = 'Comprador', password?: string): Promise<boolean> => {
+  const loginUser = async (email: string, fullName = 'Comprador', password?: string): Promise<User | null> => {
     try {
       const user = await auth.login(email, password, fullName);
       setCurrentUser(user);
       setIsAuthModalOpen(false);
       showToast(`✓ Bienvenido/a, ${user.fullName}`);
-      return true;
+      return user;
     } catch (e) {
       showToast(`⚠️ ${e instanceof Error ? e.message : 'No pudimos iniciar sesión.'}`);
-      return false;
+      return null;
     }
   };
 
@@ -690,7 +690,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const orderNumber = `SO-${Math.floor(1000 + Math.random() * 9000)}`;
     // ── Retención automática de comisión ──
-    const settlement = calcSettlement(total, payment.method, COMMISSION_CONFIG.rate);
+    const settlement = calcSettlement(total, payment.method);
     const sellerName = cart[0]?.product.vendor || 'ElectroPlaza Outlet';
     const nowISO = new Date().toISOString();
     const newOrder: Order = {

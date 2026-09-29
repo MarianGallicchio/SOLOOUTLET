@@ -261,10 +261,10 @@ export const SellerWorkspace: React.FC = () => {
                 <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Neto a Liquidar</div>
                 <div className="text-xl sm:text-2xl font-black text-slate-900 tabular-nums mt-1">
                   {formatPrice(
-                    myOrders.reduce((s, o) => s + (o.settlement?.netPayout || Math.round(o.total * 0.935)), 0)
+                    myOrders.reduce((s, o) => s + (o.settlement?.netPayout || Math.round(o.total * 0.88)), 0)
                   )}
                 </div>
-                <div className="text-[11px] text-slate-500 mt-1">Deducida comisión ~6.5%</div>
+                <div className="text-[11px] text-slate-500 mt-1">Deducida comisión de plataforma (10–15%)</div>
               </div>
 
               <div className="p-4 rounded-2xl bg-white/70 border border-slate-200/80 shadow-2xs">

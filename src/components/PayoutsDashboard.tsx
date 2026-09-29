@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useStore } from '../context/StoreContext';
 import { formatPrice } from '../utils/formatters';
-import { COMMISSION_CONFIG } from '../utils/commissions';
+import { COMMISSION_CONFIG, COMMISSION_TIERS } from '../utils/commissions';
 import { BadgeCheck, Building2, Landmark, Wallet, ArrowRight, Receipt } from 'lucide-react';
 
 /**
@@ -40,7 +40,7 @@ export const PayoutsDashboard: React.FC = () => {
       {/* Resumen plataforma */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-slate-900 text-white rounded-2xl p-5">
-          <div className="text-[11px] uppercase tracking-wider text-slate-400 font-bold">Comisión retenida SoloOutlet ({Math.round(COMMISSION_CONFIG.rate * 100)}%)</div>
+          <div className="text-[11px] uppercase tracking-wider text-slate-400 font-bold">Comisión retenida SoloOutlet ({COMMISSION_CONFIG.rateLabel})</div>
           <div className="text-2xl font-black tabular-nums mt-1">{formatPrice(platformRetainedTotal())}</div>
           <div className="text-[11px] text-slate-400 mt-1">Se retiene automáticamente en cada venta. No se transfiere al vendedor.</div>
         </div>
@@ -63,7 +63,7 @@ export const PayoutsDashboard: React.FC = () => {
       {/* Registrar cuenta bancaria del vendedor */}
       <div className="bg-white border border-slate-200 rounded-2xl p-5">
         <h3 className="text-sm font-bold flex items-center gap-2"><Landmark className="w-4 h-4 text-blue-600" /> Cuenta para recibir transferencias</h3>
-        <p className="text-xs text-slate-500 mt-1">El neto (venta − {Math.round(COMMISSION_CONFIG.rate * 100)}% comisión) se transfiere a esta cuenta.</p>
+        <p className="text-xs text-slate-500 mt-1">El neto (venta − comisión escalonada) se transfiere a esta cuenta.</p>
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 mt-3">
           <input value={storeName} onChange={(e) => setStoreName(e.target.value)} placeholder="Comercio" className="px-3 py-2 text-xs border border-slate-200 rounded-xl" />
           <input value={cbu} onChange={(e) => setCbu(e.target.value)} placeholder="CBU (22 dígitos)" className="px-3 py-2 text-xs border border-slate-200 rounded-xl font-mono" />
@@ -82,7 +82,7 @@ export const PayoutsDashboard: React.FC = () => {
       {/* Por vendedor: retener comisión + transferir neto */}
       <div className="bg-white border border-slate-200 rounded-2xl p-5 overflow-x-auto">
         <h3 className="text-sm font-bold mb-1 flex items-center gap-2"><Building2 className="w-4 h-4 text-blue-600" /> Liquidación por vendedor</h3>
-        <p className="text-xs text-slate-500 mb-3">Flujo: venta → SoloOutlet retiene {Math.round(COMMISSION_CONFIG.rate * 100)}% → neto pendiente → generar liquidación → transferir.</p>
+        <p className="text-xs text-slate-500 mb-3">Flujo: venta → SoloOutlet retiene {COMMISSION_CONFIG.rateLabel} → neto pendiente → generar liquidación → transferir.</p>
         <table className="w-full text-xs text-left">
           <thead>
             <tr className="border-b text-slate-400 uppercase text-[10px]">
