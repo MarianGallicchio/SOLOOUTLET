@@ -30,6 +30,10 @@ jobs:
 
       - name: Build
         run: bun run build
+        env:
+          # Cuentas reales: URL de la API (configurar el secret en el repo).
+          # Si el secret no existe, compila en modo demo.
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

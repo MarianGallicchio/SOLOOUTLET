@@ -61,6 +61,13 @@ app.use('/api/webhooks/mercadopago', express.raw({ type: '*/*' }));
 app.use(express.json({ limit: '2mb' }));
 app.use('/api', marketplaceRoutes);
 
+// Healthcheck para Railway/Render/uptime monitors
+app.get('/api/health', (req, res) => {
+  pool.query('SELECT 1')
+    .then(() => res.json({ ok: true, db: 'up', mp: !!mpClient, time: new Date().toISOString() }))
+    .catch((e) => res.status(500).json({ ok: false, db: 'down', error: e.code || e.message }));
+});
+
 // ── Utilidades ──
 const j = (v, fb) => (v == null ? fb : typeof v === 'string' ? JSON.parse(v) : v);
 const rateFor = (gross) => (gross <= 50000 ? 0.1 : 0.08);
@@ -169,6 +176,82 @@ app.post('/api/auth/register', async (req, res) => {
     }
     const token = jwt.sign({ id, email: emailNorm, role: finalRole, store_name: storeName || null, is_staff: isStaff, seller_status: sellerStatus }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id, fullName, email: emailNorm, role: finalRole, storeName: storeName || null } });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Recuperación de contraseña ──
+// request: genera código de 6 dígitos (hash en DB, expira en 10 min) y lo envía por email
+// si hay RESEND_API_KEY; si no, devuelve test_code solo cuando ALLOW_RESET_CODE=1 (demo).
+const passwordResets = new Map(); // email → { codeHash, expiresAt, attempts }
+
+app.post('/api/auth/password-reset/request', async (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  if (!email) return res.status(400).json({ error: 'Falta el email' });
+  try {
+    const [rows] = await pool.execute('SELECT id FROM users WHERE email = ?', [email]);
+    if (rows.length > 0) {
+      const code = String(Math.floor(100000 + Math.random() * 900000));
+      const codeHash = await bcrypt.hash(code, 8);
+      passwordResets.set(email, { codeHash, expiresAt: Date.now() + 10 * 60 * 1000, attempts: 0 });
+      const resendKey = process.env.RESEND_API_KEY;
+      if (resendKey) {
+        try {
+          await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              from: process.env.RESET_EMAIL_FROM || 'solooutlet <onboarding@resend.dev>',
+              to: [email],
+              subject: `Tu código de recuperación solooutlet: ${code}`,
+              html: `<p>Tu código de recuperación es <strong style="font-size:20px;letter-spacing:4px">${code}</strong>.</p><p>Vence en 10 minutos. Si no fuiste vos, ignorá este correo.</p>`,
+            }),
+          });
+          return res.json({ ok: true, viaEmail: true });
+        } catch (mailErr) {
+          console.error('resend error:', mailErr.message);
+        }
+      }
+      // Sin servicio de email: solo exponer el código si está explícito el modo demo
+      if (process.env.ALLOW_RESET_CODE === '1') {
+        return res.json({ ok: true, viaEmail: false, test_code: code });
+      }
+    }
+    // Respuesta idéntica exista o no la cuenta (anti-enumeración)
+    res.json({ ok: true, viaEmail: false });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/auth/password-reset/confirm', async (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  const code = String(req.body?.code || '');
+  const newPassword = String(req.body?.newPassword || '');
+  if (!email || !code || newPassword.length < 6) {
+    return res.status(400).json({ error: 'Datos incompletos (contraseña mínima: 6 caracteres)' });
+  }
+  const pending = passwordResets.get(email);
+  if (!pending) return res.status(400).json({ error: 'No hay una recuperación iniciada para este email' });
+  if (Date.now() > pending.expiresAt) {
+    passwordResets.delete(email);
+    return res.status(400).json({ error: 'El código venció. Pedí uno nuevo.' });
+  }
+  if (pending.attempts >= 5) {
+    passwordResets.delete(email);
+    return res.status(400).json({ error: 'Demasiados intentos. Pedí un código nuevo.' });
+  }
+  const ok = await bcrypt.compare(code, pending.codeHash);
+  if (!ok) {
+    pending.attempts += 1;
+    return res.status(400).json({ error: 'Código incorrecto' });
+  }
+  try {
+    const hash = await bcrypt.hash(newPassword, 10);
+    await pool.execute('UPDATE users SET password_hash = ? WHERE email = ?', [hash, email]);
+    passwordResets.delete(email);
+    res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -523,4 +606,43 @@ app.patch('/api/notifications/read', auth(), async (req, res) => {
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, mp: !!mpClient }));
 
-app.listen(PORT, () => console.log(`solooutlet API en http://localhost:${PORT} · MP: ${mpClient ? 'CONFIGURADO' : 'sin token'}`));
+/**
+ * Auto-inicialización de tablas al arrancar (idempotente): permite desplegar
+ * en Railway/Render sin ejecutar schema.sql a mano. Se ejecuta una vez por boot.
+ */
+const fs = await import('fs');
+const path = await import('path');
+const { fileURLToPath } = await import('url');
+const __dirnameServer = path.dirname(fileURLToPath(import.meta.url));
+
+async function initDb() {
+  try {
+    const schema = fs.readFileSync(path.join(__dirnameServer, 'schema.sql'), 'utf8');
+    // schema.sql puede traer CREATE DATABASE/USE: ejecutar solo las tablas
+    const statements = schema
+      .split(';')
+      .map((s) => s.trim())
+      .filter((s) => /^CREATE TABLE/i.test(s));
+    for (const stmt of statements) {
+      await pool.query(stmt);
+    }
+    // Migraciones
+    const migDir = path.join(__dirnameServer, 'migrations');
+    if (fs.existsSync(migDir)) {
+      for (const f of fs.readdirSync(migDir).filter((f) => f.endsWith('.sql')).sort()) {
+        const mig = fs.readFileSync(path.join(migDir, f), 'utf8');
+        for (const stmt of mig.split(';').map((s) => s.trim()).filter((s) => s.length > 0 && !s.startsWith('--'))) {
+          try { await pool.query(stmt); } catch (e) { if (!/ER_(DUP|ALREADY)/.test(e.code || '')) console.warn(`migración ${f}:`, e.code); }
+        }
+      }
+    }
+    console.log('DB inicializada: tablas verificadas/creadas.');
+  } catch (e) {
+    console.error('initDb:', e.message);
+  }
+}
+
+app.listen(PORT, async () => {
+  console.log(`solooutlet API en puerto ${PORT} · MP: ${mpClient ? 'CONFIGURADO' : 'sin token'}`);
+  await initDb();
+});
