@@ -11,7 +11,7 @@ import { PaymentBadges } from './PaymentIcons';
 const NEWSLETTER_KEY = 'solooutlet_newsletter';
 
 export const Footer: React.FC = () => {
-  const { setCurrentView, setHelpSection, currentUser, triggerPushNotification } = useStore();
+  const { setCurrentView, setHelpSection, currentUser, showToast } = useStore();
   const staff = isPlatformOwner(currentUser);
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -40,21 +40,11 @@ export const Footer: React.FC = () => {
     persist(NEWSLETTER_KEY, [...list, value]);
     setEmail('');
     setEmailError(null);
-    triggerPushNotification({
-      type: 'system',
-      title: '🎟 Newsletter activado',
-      body: 'Vas a recibir las liquidaciones con mayor descuento antes que nadie.',
-      linkView: 'catalog',
-    });
+    showToast('🎟 ¡Newsletter activado! Vas a recibir las mejores oportunidades antes que nadie.');
   };
 
   const socialSoon = (red: string) => {
-    triggerPushNotification({
-      type: 'system',
-      title: `📣 ${red} oficial en preparación`,
-      body: 'Te avisamos por acá cuando lancemos nuestras redes.',
-      linkView: 'home',
-    });
+    showToast(`📣 Nuestro ${red} oficial está en preparación. ¡Muy pronto!`);
   };
 
   const linkCls = 'hover:text-[#004AC6] transition-colors cursor-pointer text-left';
@@ -107,7 +97,7 @@ export const Footer: React.FC = () => {
                 </button>
               ))}
             </div>
-            <p className="text-[11px] text-slate-500 mt-2">Liquidaciones flash y lotes nuevos, primero por ahí.</p>
+            <p className="text-[11px] text-slate-500 mt-2">Novedades y oportunidades, primero por ahí.</p>
           </div>
         </div>
 
