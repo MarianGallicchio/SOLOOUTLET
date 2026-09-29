@@ -17,6 +17,7 @@ import {
   Heart,
   Camera,
 } from 'lucide-react';
+import { getRecommendations } from '../utils/recommendations';
 
 export const ProductDetailModal: React.FC = () => {
   const { selectedProductModal, closeProductModal, addToCart, setIsCheckoutOpen, addReview, toggleWishlist, isInWishlist, products, openProductModal } = useStore();
@@ -37,6 +38,7 @@ export const ProductDetailModal: React.FC = () => {
 
   const product = selectedProductModal;
   const isFavorited = isInWishlist(product.id);
+  const related = getRecommendations(product, products, { limit: 4 });
   const conditionStyle = getConditionBadgeStyle(product.estado);
   const isOutOfStock = product.stock <= 0;
 
@@ -452,17 +454,19 @@ export const ProductDetailModal: React.FC = () => {
 
             </div>
 
-            {/* Relacionados */}
-            {(() => {
-              const related = products.filter((p) => p.cat === product.cat && p.id !== product.id).slice(0, 4);
-              if (related.length === 0) return null;
+            {/* Relacionados — motor de recomendaciones inteligente */}
+            {related.items.length > 0 && (() => {
+              const relatedItems = related.items;
               return (
                 <div className="px-6 sm:px-8 pb-6 sm:pb-8">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
-                    También te puede interesar
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center justify-between gap-2">
+                    <span>También te puede interesar</span>
+                    <span className="text-[10px] font-semibold normal-case tracking-normal text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                      ✨ Sugerencias según lo que buscás
+                    </span>
                   </h4>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {related.map((r) => (
+                  {relatedItems.map((r) => (
                       <button
                         key={r.id}
                         onClick={() => {

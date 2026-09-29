@@ -45,13 +45,13 @@ export const Navbar: React.FC = () => {
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-slate-200">
       {/* Announcement bar */}
-      <div className="bg-gradient-to-r from-orange-600 to-amber-600 text-white text-[11px] sm:text-xs">
+      <div className="bg-gradient-to-r from-[#004AC6] to-[#1D4ED8] text-white text-[11px] sm:text-xs">
         <div className="max-w-7xl mx-auto px-4 py-1.5 flex items-center justify-between gap-2">
           <span className="font-semibold truncate">
-            🔥 Liquidaciones de temporada hasta 70% OFF · Envíos rápidos a todo el país · Cuotas sin interés con Mercado Pago
+            ✓ Estado real certificado foto por foto · Pagos protegidos con Mercado Pago
           </span>
           <span className="hidden md:inline font-semibold whitespace-nowrap">
-            ✓ Transparencia radical certificada · Venta final
+            Envíos a todo el país · Garantía en cada publicación
           </span>
         </div>
       </div>

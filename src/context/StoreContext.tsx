@@ -1,87 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product, CartItem, Order, CustomerData, PaymentDetails, ViewType, Review, User, MerchantApplication, ChatMessage, PushNotification, Seller, Payout, SellerMember, SellerRole, AdCampaign, IntegrationKey, SavedAddress, DisputeReason, DISPUTE_REASONS } from '../types';
-import { INITIAL_PRODUCTS, INITIAL_ORDERS } from '../data/mockData';
+import { INITIAL_PRODUCTS } from '../data/mockData';
 import { calcSettlement, releaseDateFrom, COMMISSION_CONFIG, resolveCoupon, resolveShipping } from '../utils/commissions';
 import { DEFAULT_INTEGRATIONS } from '../utils/sellerWorkspace';
 import { load, persist, forget, isApiMode, API_URL } from '../data/db';
 import { auth, AuthSession } from '../data/auth';
 
-const DEFAULT_USER: User = {
-  id: 'usr-101',
-  fullName: 'Mariano Agustín Gómez',
-  email: 'marianoagusting1996@gmail.com',
-  phone: '11 5590-4421',
-  address: 'Av. Libertador 2450, Piso 7A',
-  city: 'Buenos Aires (CABA - Palermo)',
-  postalCode: '1425',
-  role: 'buyer',
-  createdAt: '2026-08-15',
-  addresses: [
-    {
-      id: 'addr-1',
-      label: 'Casa / Principal',
-      fullName: 'Mariano Agustín Gómez',
-      phone: '11 5590-4421',
-      address: 'Av. Libertador 2450, Piso 7A',
-      city: 'Buenos Aires (CABA - Palermo)',
-      postalCode: '1425',
-    },
-    {
-      id: 'addr-2',
-      label: 'Trabajo / Oficina',
-      fullName: 'Mariano Agustín Gómez',
-      phone: '11 5590-4421',
-      address: 'Av. Corrientes 1240, Piso 3',
-      city: 'CABA - Centro',
-      postalCode: '1001',
-    },
-  ],
-};
+const INITIAL_USER: User | null = null;
 
-const INITIAL_PRODUCT_CHATS: Record<string, ChatMessage[]> = {
-  'prod-1': [
-    {
-      id: 'msg-1',
-      sender: 'buyer',
-      text: 'Hola, ¿la caja está muy rota o solo fue abierta?',
-      timestamp: '14:20',
-    },
-    {
-      id: 'msg-2',
-      sender: 'seller',
-      text: '¡Hola! La caja solo tiene el precinto de fábrica abierto porque el cliente original cambió de color dentro de las 48hs. La notebook está 100% impecable sin marcas, batería al 100% y cargador original.',
-      timestamp: '14:22',
-    },
-  ],
-  'prod-2': [
-    {
-      id: 'msg-3',
-      sender: 'buyer',
-      text: '¿El rayón se nota cuando está encendida la tele viendo de frente?',
-      timestamp: '10:05',
-    },
-    {
-      id: 'msg-4',
-      sender: 'seller',
-      text: 'Hola! No, para nada. El rayón cosmético de 1.5 cm está en la parte trasera del marco de plástico. El panel LED 4K está impoluto sin píxeles muertos.',
-      timestamp: '10:07',
-    },
-  ],
-  'prod-3': [
-    {
-      id: 'msg-5',
-      sender: 'buyer',
-      text: 'Hola, ¿incluye el vaporizador para espumar leche?',
-      timestamp: 'Ayer 18:30',
-    },
-    {
-      id: 'msg-6',
-      sender: 'seller',
-      text: '¡Hola! Sí, incluye el tubo vaporizador de acero inoxidable, el porta filtro doble y la cuchara prensa. Se despacha en caja de cartón triple acolchada de máxima seguridad.',
-      timestamp: 'Ayer 18:32',
-    },
-  ],
-};
+const INITIAL_PRODUCT_CHATS: Record<string, ChatMessage[]> = {};
 
 interface StoreContextType {
   products: Product[];
@@ -104,6 +31,7 @@ interface StoreContextType {
   setIsCheckoutOpen: (open: boolean) => void;
   lastOrder: Order | null;
   toastMessage: string | null;
+  showToast: (msg: string) => void;
   addToCart: (product: Product, quantity?: number) => { success: boolean; message: string };
   removeFromCart: (productId: string) => void;
   updateCartQty: (productId: string, quantity: number) => void;
@@ -198,20 +126,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [cart, setCart] = useState<CartItem[]>(() =>
     load('solooutlet_cart', [] as CartItem[]));
 
-  // Migración: órdenes viejas sin settlement reciben cálculo automático retroactivo
+    // Migración: órdenes viejas sin settlement reciben cálculo automático retroactivo
   const [orders, setOrders] = useState<Order[]>(() => {
     const saved = load('solooutlet_orders', [] as Order[]);
-    const source = saved.length >= INITIAL_ORDERS.length
-      ? saved
-      : [...saved, ...INITIAL_ORDERS.filter((io) => !saved.some((s) => s.id === io.id))];
-    const initialList = source.length > 0 ? source : INITIAL_ORDERS;
-    return initialList.map((o) => {
+    return saved.map((o) => {
       if (o.settlement) return o;
       const settlement = calcSettlement(o.total, o.paymentDetails.method);
       return {
         ...o,
         settlement,
-        sellerName: o.sellerName || o.items?.[0]?.product?.vendor || 'ElectroPlaza Outlet',
+        sellerName: o.sellerName || o.items?.[0]?.product?.vendor || 'Vendedor',
         payoutStatus: o.payoutStatus || 'pendiente',
         payoutReleaseAt: o.payoutReleaseAt || releaseDateFrom(new Date().toISOString()),
       };
@@ -219,10 +143,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
 
   const [wishlist, setWishlist] = useState<string[]>(() =>
-    load('solooutlet_wishlist', ['prod-1', 'prod-3']));
+    load('solooutlet_wishlist', [] as string[]));
 
   const [currentUser, setCurrentUser] = useState<User | null>(() =>
-    load('solooutlet_user', DEFAULT_USER));
+    load('solooutlet_user', INITIAL_USER));
 
   const [merchantApplications, setMerchantApplications] = useState<MerchantApplication[]>(() =>
     load('solooutlet_merchant_apps', [] as MerchantApplication[]));
@@ -248,36 +172,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [pushNotifications, setPushNotifications] = useState<PushNotification[]>(() => {
     const saved = load<PushNotification[] | null>('solooutlet_push_notifs', null);
-    if (saved) return saved;
-    return [
-      {
-        id: 'notif-1',
-        type: 'order_status',
-        title: '📦 Pedido Despachado por Andreani',
-        body: 'Tu compra #ORD-2026-891 ya está en viaje con código de seguimiento AND-9281920.',
-        timestamp: 'Hace 15 min',
-        read: false,
-        linkView: 'profile',
-        metadata: {
-          orderId: 'ord-101',
-          productTitle: 'Notebook 14" Core i5',
-          newStatus: 'despachado',
-        },
-      },
-      {
-        id: 'notif-2',
-        type: 'chat_message',
-        title: '💬 El vendedor respondió a tu consulta',
-        body: 'ElectroPlaza Outlet: "Te confirmo que el equipo tiene batería al 100% y cargador original..."',
-        timestamp: 'Hace 1 hora',
-        read: false,
-        linkView: 'catalog',
-        metadata: {
-          productId: 'prod-1',
-          productTitle: 'Notebook 14" Core i5',
-        },
-      },
-    ];
+    return saved || [];
   });
 
   const [currentView, setCurrentView] = useState<ViewType>('home');
@@ -764,7 +659,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const orderNumber = `SO-${Math.floor(1000 + Math.random() * 9000)}`;
     // ── Retención automática de comisión ──
     const settlement = calcSettlement(total, payment.method);
-    const sellerName = cart[0]?.product.vendor || 'ElectroPlaza Outlet';
+    const sellerName = cart[0]?.product.vendor || 'Vendedor SoloOutlet';
     const nowISO = new Date().toISOString();
     const newOrder: Order = {
       id: `ord-${Date.now()}`,
@@ -1230,6 +1125,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setIsCheckoutOpen,
         lastOrder,
         toastMessage,
+        showToast,
         addToCart,
         removeFromCart,
         updateCartQty,
