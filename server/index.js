@@ -161,6 +161,48 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+/**
+ * Login con Google: recibe el ID token (credential) de Google Identity Services,
+ * lo verifica contra la API de Google, crea/actualiza el usuario en MySQL y emite JWT.
+ * Requiere GOOGLE_CLIENT_ID configurado en .env para validar la audiencia.
+ */
+async function verifyGoogleCredential(credential) {
+  const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`);
+  if (!res.ok) throw new Error('Token de Google inválido');
+  const info = await res.json();
+  if (info.email_verified !== 'true' && info.email_verified !== true) throw new Error('Email de Google no verificado');
+  if (process.env.GOOGLE_CLIENT_ID && info.aud !== process.env.GOOGLE_CLIENT_ID) {
+    throw new Error('Token de Google de otra aplicación');
+  }
+  if (!info.exp || Number(info.exp) * 1000 < Date.now()) throw new Error('Token de Google expirado');
+  return { email: String(info.email).toLowerCase(), name: info.name || info.email.split('@')[0], picture: info.picture || null };
+}
+
+app.post('/api/auth/google', async (req, res) => {
+  const { credential } = req.body || {};
+  if (!credential) return res.status(400).json({ error: 'Falta el credential de Google' });
+  try {
+    const g = await verifyGoogleCredential(credential);
+    let [rows] = await pool.execute('SELECT * FROM users WHERE email = ?', [g.email]);
+    let u = rows[0];
+    if (!u) {
+      // Registro automático por Google (cuenta compradora)
+      const id = `usr-${Date.now()}`;
+      const hash = await bcrypt.hash(`google:${credential.slice(-24)}`, 10);
+      const isStaff = ['admin@solooutlet.com', 'marianoagusting1996@gmail.com'].includes(g.email);
+      await pool.execute(
+        'INSERT INTO users (id, full_name, email, password_hash, role, is_staff) VALUES (?, ?, ?, ?, ?, ?)',
+        [id, g.name, g.email, hash, 'buyer', isStaff],
+      );
+      u = { id, full_name: g.name, email: g.email, role: 'buyer', store_name: null, is_staff: isStaff };
+    }
+    const token = jwt.sign({ id: u.id, email: u.email, role: u.role, store_name: u.store_name, is_staff: !!u.is_staff }, JWT_SECRET, { expiresIn: '7d' });
+    res.json({ token, user: { id: u.id, fullName: u.full_name, email: u.email, role: u.role, storeName: u.store_name } });
+  } catch (e) {
+    res.status(401).json({ error: e.message });
+  }
+});
+
 app.get('/api/auth/me', auth(), async (req, res) => {
   const [rows] = await pool.execute('SELECT * FROM users WHERE id = ?', [req.user.id]);
   const u = rows[0];

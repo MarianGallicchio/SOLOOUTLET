@@ -140,6 +140,8 @@ interface StoreContextType {
   // User Profile & Authentication (vía servicio `auth`, listo para DB)
   currentUser: User | null;
   loginUser: (email: string, fullName?: string, password?: string) => Promise<User | null>;
+  /** Login con Google: envía el ID token al backend, que lo verifica y crea/sesiona en MySQL. */
+  loginWithGoogle: (credential: string) => Promise<User | null>;
   logoutUser: () => Promise<void>;
   updateUserProfile: (updated: Partial<User>) => Promise<void>;
   isAuthModalOpen: boolean;
@@ -501,6 +503,38 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return user;
     } catch (e) {
       showToast(`⚠️ ${e instanceof Error ? e.message : 'No pudimos iniciar sesión.'}`);
+      return null;
+    }
+  };
+
+  const loginWithGoogle = async (credential: string): Promise<User | null> => {
+    // Modo API: el backend verifica el ID token con Google y crea/busca el usuario en MySQL.
+    if (isApiMode) {
+      try {
+        const res = await fetch(`${API_URL}/auth/google`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ credential }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || 'Google rechazó el acceso');
+        setCurrentUser(data.user);
+        persist('solooutlet_auth_session', { userId: data.user.id, token: data.token, createdAt: new Date().toISOString() });
+        persist('solooutlet_user', data.user);
+        setIsAuthModalOpen(false);
+        showToast(`✓ Bienvenido/a, ${data.user.fullName}`);
+        return data.user as User;
+      } catch (e) {
+        showToast(`⚠️ ${e instanceof Error ? e.message : 'No pudimos iniciar sesión con Google.'}`);
+        return null;
+      }
+    }
+    // Modo demo (sin backend): sesión local con los datos del token decodificado.
+    try {
+      const payload = JSON.parse(atob(credential.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      return await loginUser(payload.email || 'usuario@gmail.com', payload.name || 'Usuario Google');
+    } catch {
+      showToast('⚠️ No pudimos validar tu cuenta de Google.');
       return null;
     }
   };
@@ -1207,6 +1241,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isInWishlist,
         currentUser,
         loginUser,
+        loginWithGoogle,
         logoutUser,
         updateUserProfile,
         isAuthModalOpen,

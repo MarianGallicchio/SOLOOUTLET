@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../context/StoreContext';
 import { AUTH_PASSWORD_PLACEHOLDER } from '../data/auth';
 import { CategoryType } from '../types';
@@ -21,7 +21,34 @@ import {
 } from 'lucide-react';
 
 export const AuthModal: React.FC = () => {
-  const { isAuthModalOpen, setIsAuthModalOpen, authInitialTab, loginUser, submitMerchantApplication } = useStore();
+  const { isAuthModalOpen, setIsAuthModalOpen, authInitialTab, loginUser, loginWithGoogle, submitMerchantApplication } = useStore();
+
+  // Google Identity Services: el Client ID lo inyecta el backend/.env vía VITE_GOOGLE_CLIENT_ID.
+  const GOOGLE_CLIENT_ID = (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) || '';
+  const googleBtnRef = useRef<HTMLDivElement | null>(null);
+  const [googleReady, setGoogleReady] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthModalOpen || !GOOGLE_CLIENT_ID) return;
+    const init = () => {
+      const g = (window as unknown as { google?: { accounts: { id: { initialize: (o: unknown) => void; renderButton: (el: HTMLElement, o: unknown) => void } } } }).google;
+      if (!g || !googleBtnRef.current) return;
+      g.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: (resp: { credential?: string }) => {
+          if (resp.credential) void loginWithGoogle(resp.credential);
+        },
+      });
+      g.accounts.id.renderButton(googleBtnRef.current, { theme: 'outline', size: 'large', width: 320, text: 'continue_with' });
+      setGoogleReady(true);
+    };
+    if ((window as unknown as { google?: unknown }).google) { init(); return; }
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.onload = init;
+    document.head.appendChild(script);
+  }, [isAuthModalOpen, GOOGLE_CLIENT_ID, loginWithGoogle]);
 
   const [activeTab, setActiveTab] = useState<'buyer' | 'merchant'>(authInitialTab);
   const [buyerMode, setBuyerMode] = useState<'login' | 'register'>('login');
@@ -146,12 +173,14 @@ export const AuthModal: React.FC = () => {
               </p>
             </div>
 
-            {/* Quick 1-click button simulation */}
-            <button
-              type="button"
-              onClick={() => loginUser('marianoagusting1996@gmail.com', 'Mariano Agustín Gómez')}
-              className="w-full py-2.5 px-4 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 flex items-center justify-center gap-2 transition-colors shadow-2xs"
-            >
+            {/* Google Sign-In real: GSI si hay Client ID, fallback demo si no */}
+            <div className="w-full flex justify-center" ref={googleBtnRef} />
+            {!googleReady && (
+              <button
+                type="button"
+                onClick={() => loginUser('marianoagusting1996@gmail.com', 'Mariano Agustín Gómez')}
+                className="w-full py-2.5 px-4 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 flex items-center justify-center gap-2 transition-colors shadow-2xs"
+              >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path
                   fill="#4285F4"
@@ -171,7 +200,8 @@ export const AuthModal: React.FC = () => {
                 />
               </svg>
               <span>Continuar con cuenta de Google</span>
-            </button>
+              </button>
+            )}
 
             <div className="relative flex items-center justify-center">
               <div className="border-t border-slate-200 w-full" />

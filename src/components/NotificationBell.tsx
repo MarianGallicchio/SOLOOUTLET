@@ -73,7 +73,8 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ className = 
             onClick={() => setIsOpen(false)}
           />
 
-          <div className="absolute right-0 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 mt-2 w-80 sm:w-96 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 glass-panel-3d">
+          {/* Panel fijo: nunca se corta arriba ni los laterales (móvil y desktop) */}
+          <div className="fixed left-2 right-2 top-16 sm:left-auto sm:right-4 sm:w-96 max-h-[70vh] bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-2xl z-[60] overflow-hidden animate-in fade-in zoom-in-95 duration-150 glass-panel-3d">
             {/* Header */}
             <div className="p-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
               <div className="flex items-center gap-2">
@@ -122,7 +123,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ className = 
             </div>
 
             {/* Notification items */}
-            <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+            <div className="max-h-[50vh] overflow-y-auto divide-y divide-slate-100">
               {pushNotifications.length === 0 ? (
                 <div className="py-8 text-center text-xs text-slate-500 px-4">
                   <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2">
