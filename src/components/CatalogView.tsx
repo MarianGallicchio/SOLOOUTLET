@@ -23,6 +23,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { ConditionType, CategoryType, Product } from '../types';
+import { isMerchant } from '../utils/sellerWorkspace';
 
 export type SortOptionType = 'recommended' | 'price-asc' | 'price-desc' | 'newest' | 'discount';
 
@@ -163,6 +164,9 @@ export const CatalogView: React.FC = () => {
     setSelectedCategoryFilter,
     searchQuery,
     setSearchQuery,
+    currentUser,
+    openAuthModal,
+    setCurrentView,
   } = useStore();
 
   const [sortOption, setSortOption] = useState<SortOptionType>('recommended');
@@ -1003,6 +1007,44 @@ export const CatalogView: React.FC = () => {
               {filteredProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
+            </div>
+          ) : products.length === 0 ? (
+            /* Catálogo vacío (sin productos en toda la plataforma): invitación a comercios */
+            <div className="text-center py-16 px-4 bg-white border border-slate-200 rounded-3xl shadow-2xs">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center text-3xl">
+                🏪
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 mb-1">
+                Catálogo en construcción: los comercios están cargando su stock
+              </h3>
+              <p className="text-sm text-slate-500 max-w-lg mx-auto mb-6">
+                Todavía no hay publicaciones activas. Si tenés un comercio con devoluciones,
+                stock sin caja o productos con detalles estéticos, este es el momento ideal para
+                publicar: los primeros vendedores captan toda la atención de los compradores.
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                {isMerchant(currentUser) ? (
+                  <button
+                    onClick={() => setCurrentView('view-publicar')}
+                    className="px-5 py-2.5 rounded-xl bg-orange-600 text-white font-semibold text-xs sm:text-sm hover:bg-orange-700 transition-colors shadow-sm cursor-pointer"
+                  >
+                    Publicar mi primer producto
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => openAuthModal('merchant')}
+                    className="px-5 py-2.5 rounded-xl bg-orange-600 text-white font-semibold text-xs sm:text-sm hover:bg-orange-700 transition-colors shadow-sm cursor-pointer"
+                  >
+                    Registrar mi comercio y vender
+                  </button>
+                )}
+                <button
+                  onClick={() => setCurrentView('vender')}
+                  className="px-5 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-semibold text-xs sm:text-sm hover:bg-slate-200 transition-colors cursor-pointer"
+                >
+                  Conocer cómo funciona para vendedores
+                </button>
+              </div>
             </div>
           ) : (
             <div className="text-center py-16 px-4 bg-white border border-slate-200 rounded-3xl shadow-2xs">
