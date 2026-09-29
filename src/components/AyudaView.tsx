@@ -101,7 +101,9 @@ export const AyudaView: React.FC = () => {
 
             <h3 className="text-sm font-bold text-slate-900 pt-2">5. Comisiones y pagos a vendedores</h3>
             <ul className="list-disc pl-5 space-y-1.5">
-              <li><strong>Comisión escalonada sobre cada venta</strong>: 15% hasta $50.000; 12% entre $50.001 y $200.000; 10% por encima de $200.000. Se retiene automáticamente al confirmarse la venta, más el costo de pasarela del medio de pago elegido por el comprador.</li>
+              <li><strong>Comisión escalonada sobre cada venta</strong>: 15% hasta $50.000; 12% entre $50.001 y $200.000; 10% por encima de $200.000. Se retiene automáticamente al confirmarse la venta vía <strong>split de pagos de Mercado Pago</strong>: el dinero se reparte en el momento del pago, sin transferencias manuales.</li>
+              <li><strong>Orden de descuentos al vendedor:</strong> del monto total de la venta se descuenta primero la <strong>comisión de Mercado Pago</strong> (por procesamiento del pago) y luego la <strong>comisión de SoloOutlet</strong>. Es decir, el vendedor recibe el total − comisión MP − comisión SoloOutlet. El vendedor declara conocer y aceptar este orden al conectar su cuenta de Mercado Pago.</li>
+              <li><strong>Reembolsos:</strong> en caso de reembolso de una venta, el importe se descuenta <strong>proporcionalmente</strong> de la cuenta de Mercado Pago del vendedor y de la de SoloOutlet. Si el saldo del vendedor no alcanza para cubrir su parte, SoloOutlet cubre su porción y el remanente se recupera por los medios legales correspondientes o se compensa con liquidaciones futuras del vendedor.</li>
               <li><strong>Liquidación al vendedor:</strong> el neto (bruto − comisión − costo de pasarela) queda pendiente con un <strong>encaje de 2 días</strong> de clearing y se transfiere al CBU/alias/Mercado Pago registrado del vendedor al generarse la liquidación desde su panel (o automáticamente por la plataforma).</li>
               <li><strong>Reintegros por disputa resuelta a favor del comprador</strong> se descuentan de la próxima liquidación del vendedor.</li>
             </ul>

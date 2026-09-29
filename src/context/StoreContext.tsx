@@ -577,6 +577,33 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const submitMerchantApplication = async (data: Omit<MerchantApplication, 'id' | 'date' | 'status'>): Promise<void> => {
+    // Modo API (MySQL): la solicitud queda PENDIENTE hasta que el admin la aprueba.
+    if (isApiMode) {
+      try {
+        const res = await fetch(`${API_URL}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fullName: data.contactPerson.trim() || data.storeName,
+            email: data.email,
+            password: undefined,
+            role: 'seller_pending',
+            storeName: data.storeName,
+            sellerProfile: { cuit: data.cuit, businessName: data.storeName, contactPerson: data.contactPerson, whatsapp: data.whatsapp, category: data.category },
+          }),
+        });
+        const body = await res.json();
+        if (!res.ok) throw new Error(body?.error || 'No pudimos enviar la solicitud');
+        setIsAuthModalOpen(false);
+        showToast(`✓ Solicitud enviada. Te avisaremos cuando "${data.storeName}" sea aprobada.`);
+        return;
+      } catch (e) {
+        showToast(`⚠️ ${e instanceof Error ? e.message : 'Error al enviar la solicitud.'}`);
+        return;
+      }
+    }
+
+    // Modo demo (sin backend): flujo local, aprobación inmediata
     const newApp: MerchantApplication = {
       ...data,
       id: `app-${Date.now()}`,

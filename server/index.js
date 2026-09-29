@@ -27,6 +27,8 @@ import mysql from 'mysql2/promise';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
+import marketplaceRoutes from './routes/marketplace.js';
+import { getTokenForSeller } from './mpOAuth.js';
 import 'dotenv/config';
 
 const PORT = Number(process.env.PORT || 3001);
@@ -57,6 +59,7 @@ app.use(cors({ origin: FRONT_URL.split(',').map((s) => s.trim()) }));
 // Webhook de MP necesita el body crudo para validar; el resto usa JSON.
 app.use('/api/webhooks/mercadopago', express.raw({ type: '*/*' }));
 app.use(express.json({ limit: '2mb' }));
+app.use('/api', marketplaceRoutes);
 
 // ── Utilidades ──
 const j = (v, fb) => (v == null ? fb : typeof v === 'string' ? JSON.parse(v) : v);
@@ -122,24 +125,48 @@ const orderRowToApi = (row) => ({
 
 // ══════════════════ AUTH ══════════════════
 app.post('/api/auth/register', async (req, res) => {
-  const { fullName, email, password, role, storeName } = req.body || {};
-  if (!email || !password || !fullName) return res.status(400).json({ error: 'Faltan datos' });
-  const emailNorm = String(email).trim().toLowerCase();
+  const { fullName, email, password, role, storeName, sellerProfile } = req.body || {};
+  const emailNorm = String(email || '').trim().toLowerCase();
+  if (!emailNorm || !fullName) return res.status(400).json({ error: 'Faltan datos' });
+  // Solicitud de vendedor: se crea PENDING (el admin la aprueba desde el panel).
+  const isSellerApplication = role === 'seller_pending';
+  if (!isSellerApplication && !password) return res.status(400).json({ error: 'Faltan datos' });
   try {
     const [existing] = await pool.execute('SELECT id FROM users WHERE email = ?', [emailNorm]);
     if (existing.length) return res.status(409).json({ error: 'Ya existe una cuenta con ese email' });
     const id = `usr-${Date.now()}`;
-    const hash = await bcrypt.hash(String(password), 10);
+    // Sin password (solicitud de vendedor): clave aleatoria no utilizable hasta aprobación.
+    const hash = await bcrypt.hash(String(password || `pending-${Date.now()}-${Math.random()}`), 10);
     const isStaff = ['admin@solooutlet.com', 'marianoagusting1996@gmail.com'].includes(emailNorm);
+    const finalRole = isSellerApplication ? 'seller' : role === 'merchant_approved' ? 'merchant_approved' : 'buyer';
+    const sellerStatus = isSellerApplication ? 'pending' : null;
     await pool.execute(
-      'INSERT INTO users (id, full_name, email, password_hash, role, store_name, is_staff) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [id, fullName.trim(), emailNorm, hash, role === 'merchant_approved' ? 'merchant_approved' : 'buyer', storeName || null, isStaff],
+      'INSERT INTO users (id, full_name, email, password_hash, role, store_name, is_staff, seller_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [id, fullName.trim(), emailNorm, hash, finalRole, storeName || null, isStaff, sellerStatus],
     );
+    if (isSellerApplication) {
+      await pool.execute(
+        `INSERT INTO seller_profiles (user_id, store_name, cuit, business_name, contact_person, whatsapp, category) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [id, storeName || '', sellerProfile?.cuit || null, sellerProfile?.businessName || storeName || null,
+          sellerProfile?.contactPerson || fullName || null, sellerProfile?.whatsapp || null, sellerProfile?.category || null],
+      );
+      // Avisar al staff para revisar la solicitud
+      for (const staff of ['admin@solooutlet.com', 'marianoagusting1996@gmail.com']) {
+        await pool.execute(
+          'INSERT INTO notifications (id, user_email, type, title, body, metadata_json) VALUES (?, ?, ?, ?, ?, ?)',
+          [`ntf-${Date.now()}-${Math.floor(Math.random() * 1e6)}`, staff, 'sale_alert',
+            `🆕 Nueva solicitud de tienda: ${storeName}`, `${fullName} (${emailNorm}) · CUIT ${sellerProfile?.cuit || '—'}. Revísala en Panel Admin → Vendedores.`,
+            JSON.stringify({ sellerUserId: id })],
+        );
+      }
+      // No iniciamos sesión: la cuenta se activa al ser aprobada.
+      return res.json({ ok: true, pending: true, message: 'Solicitud recibida. Te avisaremos por email cuando sea aprobada.' });
+    }
     if (role === 'merchant_approved' && storeName) {
       await pool.execute('INSERT IGNORE INTO sellers (id, store_name, owner_email) VALUES (?, ?, ?)', [`sel-${Date.now()}`, storeName, emailNorm]);
     }
-    const token = jwt.sign({ id, email: emailNorm, role: role || 'buyer', store_name: storeName || null, is_staff: isStaff }, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id, fullName, email: emailNorm, role: role || 'buyer', storeName: storeName || null } });
+    const token = jwt.sign({ id, email: emailNorm, role: finalRole, store_name: storeName || null, is_staff: isStaff, seller_status: sellerStatus }, JWT_SECRET, { expiresIn: '7d' });
+    res.json({ token, user: { id, fullName, email: emailNorm, role: finalRole, storeName: storeName || null } });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -154,7 +181,7 @@ app.post('/api/auth/login', async (req, res) => {
     if (!u || !(await bcrypt.compare(String(password || ''), u.password_hash))) {
       return res.status(401).json({ error: 'Email o contraseña incorrectos' });
     }
-    const token = jwt.sign({ id: u.id, email: u.email, role: u.role, store_name: u.store_name, is_staff: !!u.is_staff }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: u.id, email: u.email, role: u.role, store_name: u.store_name, is_staff: !!u.is_staff, seller_status: u.seller_status || null }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: u.id, fullName: u.full_name, email: u.email, role: u.role, storeName: u.store_name, phone: u.phone, address: u.address, city: u.city, postalCode: u.postal_code } });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -196,7 +223,7 @@ app.post('/api/auth/google', async (req, res) => {
       );
       u = { id, full_name: g.name, email: g.email, role: 'buyer', store_name: null, is_staff: isStaff };
     }
-    const token = jwt.sign({ id: u.id, email: u.email, role: u.role, store_name: u.store_name, is_staff: !!u.is_staff }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: u.id, email: u.email, role: u.role, store_name: u.store_name, is_staff: !!u.is_staff, seller_status: u.seller_status || null }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: u.id, fullName: u.full_name, email: u.email, role: u.role, storeName: u.store_name } });
   } catch (e) {
     res.status(401).json({ error: e.message });
@@ -269,33 +296,65 @@ app.post('/api/checkout', auth(), async (req, res) => {
       await pool.execute('UPDATE products SET stock = GREATEST(0, stock - ?) WHERE id = ?', [it.quantity, it.product.id]);
     }
 
-    // Preferencia Mercado Pago (pago real)
-    if (mpPreference) {
-      const pref = await mpPreference.create({
-        body: {
-          items: items.map((i) => ({
-            title: i.product.title.slice(0, 250),
-            quantity: i.quantity,
-            currency_id: 'ARS',
-            unit_price: i.product.price,
-          })),
-          payer: { email: req.user.email, name: customer?.fullName },
-          shipments: { cost: shipping, mode: 'not_specified' },
-          external_reference: id,
-          back_urls: {
-            success: `${FRONT_URL}/?pago=aprobado&orden=${orderNumber}`,
-            pending: `${FRONT_URL}/?pago=pendiente&orden=${orderNumber}`,
-            failure: `${FRONT_URL}/?pago=rechazado&orden=${orderNumber}`,
-          },
-          auto_return: 'approved',
+    // ── SPLIT DE PAGOS (marketplace) ──
+    // Buscamos al vendedor de los items: si tiene Mercado Pago conectado vía OAuth,
+    // creamos la preferencia CON SU TOKEN y le agregamos marketplace_fee (nuestra
+    // comisión calculada SIEMPRE en el backend). MP reparte solo: el vendedor cobra
+    // su parte en su cuenta y la comisión entra a la nuestra, sin transferencias.
+    const settlement = calcSettlement(total, 'mercadopago');
+    let sellerUserId = null;
+    let sellerToken = null;
+    try {
+      const [srows] = await pool.execute(
+        `SELECT sp.user_id FROM seller_profiles sp
+         JOIN users u ON u.id = sp.user_id
+         WHERE sp.store_name = ? AND u.seller_status = 'approved' AND sp.mp_user_id IS NOT NULL
+         LIMIT 1`,
+        [sellerStore],
+      );
+      if (srows[0]) {
+        sellerUserId = srows[0].user_id;
+        sellerToken = await getTokenForSeller(sellerUserId);
+      }
+    } catch {
+      /* sin split: cae al flujo con token de plataforma */
+    }
+
+    const mpAccessToken = sellerToken || process.env.MP_ACCESS_TOKEN || '';
+    if (mpAccessToken) {
+      const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
+      const preference = new Preference(client);
+      const body = {
+        items: items.map((i) => ({
+          title: i.product.title.slice(0, 250),
+          quantity: i.quantity,
+          currency_id: 'ARS',
+          unit_price: i.product.price,
+        })),
+        payer: { email: req.user.email, name: customer?.fullName },
+        shipments: { cost: shipping, mode: 'not_specified' },
+        external_reference: id,
+        notification_url: process.env.PUBLIC_WEBHOOK_URL || undefined,
+        back_urls: {
+          success: `${FRONT_URL}/?pago=aprobado&orden=${orderNumber}`,
+          pending: `${FRONT_URL}/?pago=pendiente&orden=${orderNumber}`,
+          failure: `${FRONT_URL}/?pago=rechazado&orden=${orderNumber}`,
         },
-      });
+        auto_return: 'approved',
+      };
+      // marketplace_fee SOLO con token del vendedor: es lo que nos paga a nosotros.
+      if (sellerToken) body.marketplace_fee = settlement.platformFee;
+      const pref = await preference.create({ body });
       await pool.execute('UPDATE orders SET mp_preference_id = ? WHERE id = ?', [pref.id, id]);
-      return res.json({ orderId: id, orderNumber, initPoint: pref.init_point, total });
+      return res.json({
+        orderId: id, orderNumber, initPoint: pref.init_point, total,
+        split: !!sellerToken,
+        marketplaceFee: sellerToken ? settlement.platformFee : 0,
+      });
     }
 
     // Sin token MP configurado: queda en pendiente_pago (modo prueba local)
-    res.json({ orderId: id, orderNumber, initPoint: null, total, warning: 'MP_ACCESS_TOKEN no configurado: la orden quedó pendiente de pago.' });
+    res.json({ orderId: id, orderNumber, initPoint: null, total, warning: 'MP no configurado (ni plataforma ni vendedor): la orden quedó pendiente de pago.' });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

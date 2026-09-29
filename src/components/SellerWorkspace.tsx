@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
+import { isApiMode, API_URL, load } from '../data/db';
+import { AuthSession } from '../data/auth';
 import { formatPrice } from '../utils/formatters';
 import { canAccessModule, roleLabel, SELLER_ROLES, INTEGRATION_CATALOG, WorkspaceModule, isPlatformOwner } from '../utils/sellerWorkspace';
 import { SellerRole, Order } from '../types';
@@ -46,6 +48,17 @@ export const SellerWorkspace: React.FC = () => {
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
   const [tempPrice, setTempPrice] = useState(0);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  // Estado de conexión OAuth con Mercado Pago (modo API)
+  const [mpStatus, setMpStatus] = useState<{ connected: boolean; mpUserId?: string | null } | null>(null);
+  useEffect(() => {
+    if (!isApiMode || !currentUser) return;
+    const session = load<AuthSession | null>('solooutlet_auth_session', null);
+    fetch(`${API_URL}/seller/mp/status`, { headers: { Authorization: `Bearer ${session?.token ?? ''}` } })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setMpStatus(d))
+      .catch(() => {});
+  }, [isApiMode, currentUser]);
+  const mpConnected = !!mpStatus?.connected;
 
   // ── Sin tienda todavía ──
   if (sellers.length === 0) {
@@ -589,7 +602,45 @@ export const SellerWorkspace: React.FC = () => {
       {/* INTEGRACIONES */}
       {tab === 'integraciones' && gated('integraciones', (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {INTEGRATION_CATALOG.map((item) => {
+          {/* Mercado Pago OAuth (split de pagos real) va primero */}
+          <div className={`border rounded-2xl p-5 sm:col-span-2 ${mpConnected ? 'bg-emerald-50/50 border-emerald-200' : 'bg-white border-slate-200'}`}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <Plug className="w-4 h-4 text-[#004AC6]" /> Mercado Pago — Cobros marketplace
+              </h3>
+              {mpConnected && <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700"><BadgeCheck className="w-3.5 h-3.5" /> Conectado</span>}
+            </div>
+            <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+              Vinculá tu cuenta de Mercado Pago: cuando un comprador paga, MP te acredita el neto directo en tu cuenta y la comisión de solooutlet se cobra automáticamente (split de pagos). Sin transferencias manuales.
+            </p>
+            {mpConnected && mpStatus?.mpUserId && <p className="text-[11px] font-mono text-slate-600 mt-1">Cuenta MP: {mpStatus.mpUserId}</p>}
+            {isApiMode ? (
+              <div className="mt-3 flex items-center gap-2">
+                <a
+                  href={`${API_URL}/seller/mp/connect`}
+                  className="inline-block px-4 py-2 rounded-xl text-xs font-bold bg-[#004AC6] text-white hover:bg-[#1D4ED8]"
+                >
+                  {mpConnected ? 'Reconectar cuenta MP' : 'Conectar mi Mercado Pago'}
+                </a>
+                {mpConnected && (
+                  <button
+                    onClick={async () => {
+                      const session = load<AuthSession | null>('solooutlet_auth_session', null);
+                      await fetch(`${API_URL}/seller/mp/disconnect`, { method: 'POST', headers: { Authorization: `Bearer ${session?.token ?? ''}` } });
+                      setMpStatus({ connected: false });
+                    }}
+                    className="px-4 py-2 rounded-xl text-xs font-bold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer"
+                  >
+                    Desconectar
+                  </button>
+                )}
+              </div>
+            ) : (
+              <p className="text-[11px] text-amber-700 mt-2 font-semibold">Disponible en modo producción (con base de datos conectada).</p>
+            )}
+          </div>
+
+          {INTEGRATION_CATALOG.filter((i) => i.key !== 'mercadopago').map((item) => {
             const state = seller.integrations.find((i) => i.key === item.key);
             const on = state?.enabled;
             return (

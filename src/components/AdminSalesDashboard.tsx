@@ -3,6 +3,7 @@ import { useStore } from '../context/StoreContext';
 import { isPlatformOwner, isMerchant } from '../utils/sellerWorkspace';
 import { formatPrice, getConditionBadgeStyle } from '../utils/formatters';
 import { PayoutsDashboard } from './PayoutsDashboard';
+import { SellersApprovalPanel } from './SellersApprovalPanel';
 import {
   TrendingUp,
   TrendingDown,
@@ -61,7 +62,7 @@ export const AdminSalesDashboard: React.FC = () => {
   const isSellerUser = isMerchant(currentUser);
 
   // Tab navigation
-  const [activeTab, setActiveTab] = useState<'estadisticas' | 'pedidos' | 'inventory' | 'payouts'>('estadisticas');
+  const [activeTab, setActiveTab] = useState<'estadisticas' | 'pedidos' | 'inventory' | 'payouts' | 'vendedores'>('estadisticas');
 
   // Filters for Statistics & Analytics
   const [timeRange, setTimeRange] = useState<TimeRange>('30d');
@@ -790,6 +791,18 @@ export const AdminSalesDashboard: React.FC = () => {
           >
             <DollarSign className="w-3.5 h-3.5 text-indigo-600" />
             <span>Liquidaciones & Payouts</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('vendedores')}
+            className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'vendedores'
+                ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-200'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5 text-orange-600" />
+            <span>Vendedores</span>
           </button>
         </div>
       </div>
@@ -2029,6 +2042,9 @@ export const AdminSalesDashboard: React.FC = () => {
 
       {/* Payouts Tab */}
       {activeTab === 'payouts' && <PayoutsDashboard />}
+
+      {/* Vendedores Tab: aprobación de tiendas + estado MP */}
+      {activeTab === 'vendedores' && <SellersApprovalPanel />}
 
       {/* Order Detail Modal */}
       {selectedOrderDetail && (
