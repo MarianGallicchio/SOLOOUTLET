@@ -120,6 +120,20 @@ interface StoreContextType {
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // ── Limpieza one-time de datos de referencia viejos ──
+  // Las demos anteriores precargaban productos/órdenes de ejemplo que quedaron
+  // guardados en localStorage. Este flag fuerza un único reset para que el
+  // catálogo arranque LIMPIO y cada vendedor publique los suyos.
+  const RESET_KEY = 'solooutlet_reset_v2_clean';
+  try {
+    if (!localStorage.getItem(RESET_KEY)) {
+      ['solooutlet_products', 'solooutlet_orders', 'solooutlet_cart', 'solooutlet_wishlist',
+       'solooutlet_product_chats', 'solooutlet_push_notifs', 'solooutlet_sellers',
+       'solooutlet_payouts', 'solooutlet_user', 'solooutlet_auth_session'].forEach((k) => localStorage.removeItem(k));
+      localStorage.setItem(RESET_KEY, '1');
+    }
+  } catch { /* almacenamiento bloqueado: la app sigue normal */ }
+
   const [products, setProducts] = useState<Product[]>(() =>
     load('solooutlet_products', INITIAL_PRODUCTS));
 
