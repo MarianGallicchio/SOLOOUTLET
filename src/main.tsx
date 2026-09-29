@@ -8,9 +8,12 @@ import './index.css';
  * En producción la app EXIGE backend (VITE_API_URL): sin servidor no hay
  * pagos reales ni roles confiables (localStorage es editable por el usuario).
  * El bloqueo se desactiva con ?demo=1 para maquetar localmente.
+ * En el hosting estático de GitHub Pages (*.github.io) no hay backend posible,
+ * así que se muestra automáticamente en modo demo con un aviso visible.
  */
+const onGithubPages = window.location.hostname.endsWith('github.io');
 const demoOverride = new URLSearchParams(window.location.search).has('demo');
-const allowDemo = import.meta.env.DEV || demoOverride;
+const allowDemo = import.meta.env.DEV || demoOverride || onGithubPages;
 
 function BlockedProduction() {
   return (
@@ -31,8 +34,17 @@ function BlockedProduction() {
 
 const mustBlock = !isApiMode && !allowDemo;
 
+function DemoBanner() {
+  return (
+    <div style={{position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 9999, background: '#b45309', color: '#fff', fontSize: 12, padding: '6px 12px', textAlign: 'center', fontFamily: 'system-ui'}}>
+      🧪 Modo demo (GitHub Pages, sin servidor): los datos y pagos no son reales. Para operar de verdad, desplegá la API con MySQL y Mercado Pago.
+    </div>
+  );
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     {mustBlock ? <BlockedProduction /> : <App />}
+    {!mustBlock && onGithubPages && !isApiMode && <DemoBanner />}
   </StrictMode>,
 );
