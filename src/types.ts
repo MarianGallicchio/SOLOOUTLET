@@ -238,6 +238,8 @@ export interface User {
   storeName?: string;
   createdAt: string;
   addresses?: SavedAddress[];
+  /** Email confirmado con código de 6 dígitos (backend: users.email_verified). */
+  emailVerified?: boolean;
 }
 
 export interface MerchantApplication {

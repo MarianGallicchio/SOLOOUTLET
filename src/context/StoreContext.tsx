@@ -78,6 +78,10 @@ interface StoreContextType {
   requestPasswordReset: (email: string) => Promise<{ code: string; viaEmail: boolean }>;
   /** Confirma el código y cambia la contraseña. */
   resetPassword: (email: string, code: string, newPassword: string) => Promise<boolean>;
+  /** Verificación de email: envía código (demo: devuelto; producción: por email). */
+  requestEmailVerification: (email: string) => Promise<{ code: string; viaEmail: boolean }>;
+  /** Confirma el código de verificación de email. */
+  confirmEmailVerification: (email: string, code: string) => Promise<boolean>;
   /** Login con Google: envía el ID token al backend, que lo verifica y crea/sesiona en MySQL. */
   loginWithGoogle: (credential: string) => Promise<User | null>;
   logoutUser: () => Promise<void>;
@@ -444,6 +448,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return true;
     } catch (e) {
       showToast(`⚠️ ${e instanceof Error ? e.message : 'No pudimos actualizar la contraseña.'}`);
+      return false;
+    }
+  };
+
+  const requestEmailVerification = async (email: string): Promise<{ code: string; viaEmail: boolean }> => {
+    return auth.requestEmailVerification(email);
+  };
+
+  const confirmEmailVerification = async (email: string, code: string): Promise<boolean> => {
+    try {
+      await auth.confirmEmailVerification(email, code);
+      setCurrentUser((prev) => (prev && prev.email.toLowerCase() === email.toLowerCase() ? { ...prev, emailVerified: true } : prev));
+      showToast('✓ ¡Email verificado! Tu cuenta está completa.');
+      return true;
+    } catch (e) {
+      showToast(`⚠️ ${e instanceof Error ? e.message : 'No pudimos verificar el email.'}`);
       return false;
     }
   };
@@ -1230,6 +1250,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         registerBuyer,
         requestPasswordReset,
         resetPassword,
+        requestEmailVerification,
+        confirmEmailVerification,
         loginWithGoogle,
         logoutUser,
         updateUserProfile,

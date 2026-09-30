@@ -26,6 +26,7 @@ const USERS_KEY = 'solooutlet_auth_users';
 const SECRETS_KEY = 'solooutlet_auth_secrets';
 const SESSION_KEY = 'solooutlet_auth_session';
 const RESETS_KEY = 'solooutlet_auth_resets';
+const VERIFS_KEY = 'solooutlet_auth_verifs';
 
 interface PendingReset { code: string; expiresAt: number; attempts: number }
 
@@ -63,6 +64,10 @@ export interface AuthBackend {
   requestPasswordReset(email: string): Promise<{ code: string; viaEmail: boolean }>;
   /** Cambia la contraseña validando el código. */
   resetPassword(email: string, code: string, newPassword: string): Promise<void>;
+  /** Verificación de email: envía código de 6 dígitos (15 min). */
+  requestEmailVerification(email: string): Promise<{ code: string; viaEmail: boolean }>;
+  /** Confirma el código y marca el email como verificado. */
+  confirmEmailVerification(email: string, code: string): Promise<void>;
 }
 
 /** Hash DEMO (FNV-1a, NO criptográfico). En producción: bcrypt/argon2 en el servidor. */
@@ -148,6 +153,51 @@ class LocalAuthBackend implements AuthBackend {
     persist(SECRETS_KEY, secrets);
     delete resets[norm(email)];
     persist(RESETS_KEY, resets);
+  }
+
+  async requestEmailVerification(email: string): Promise<{ code: string; viaEmail: boolean }> {
+    const user = await this.findByEmail(email);
+    if (!user) throw new Error('Cuenta no encontrada.');
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const verifs = load(VERIFS_KEY, {} as Record<string, PendingReset>);
+    verifs[norm(email)] = { code: demoHash(code), expiresAt: Date.now() + 15 * 60 * 1000, attempts: 0 };
+    persist(VERIFS_KEY, verifs);
+    // Demo sin servidor de email: el código se muestra en pantalla.
+    return { code, viaEmail: false };
+  }
+
+  async confirmEmailVerification(email: string, code: string): Promise<void> {
+    const verifs = load(VERIFS_KEY, {} as Record<string, PendingReset>);
+    const pending = verifs[norm(email)];
+    if (!pending) throw new Error('No hay una verificación pendiente para este email.');
+    if (Date.now() > pending.expiresAt) {
+      delete verifs[norm(email)];
+      persist(VERIFS_KEY, verifs);
+      throw new Error('El código venció (15 minutos). Pedí uno nuevo.');
+    }
+    if (pending.attempts >= 5) {
+      delete verifs[norm(email)];
+      persist(VERIFS_KEY, verifs);
+      throw new Error('Demasiados intentos. Pedí un código nuevo.');
+    }
+    if (demoHash(code) !== pending.code) {
+      verifs[norm(email)] = { ...pending, attempts: pending.attempts + 1 };
+      persist(VERIFS_KEY, verifs);
+      throw new Error('Código incorrecto.');
+    }
+    const users = this.users();
+    const updated = users.map((u) => (norm(u.email) === norm(email) ? { ...u, emailVerified: true } : u));
+    this.saveUsers(updated);
+    delete verifs[norm(email)];
+    persist(VERIFS_KEY, verifs);
+    // Si es el usuario en sesión, refrescar su copia
+    const session = load<AuthSession | null>(SESSION_KEY, null);
+    if (session) {
+      const current = load<User | null>('solooutlet_user', null);
+      if (current && norm(current.email) === norm(email)) {
+        persist('solooutlet_user', { ...current, emailVerified: true });
+      }
+    }
   }
 
   async login(email: string, password?: string, _fullName = 'Comprador'): Promise<User> {
@@ -340,6 +390,31 @@ class ApiAuthBackend implements AuthBackend {
     if (!res.ok) {
       const body = await res.json().catch(() => null);
       throw new Error((body as { error?: string })?.error || 'No pudimos actualizar la contraseña.');
+    }
+  }
+  async requestEmailVerification(email: string): Promise<{ code: string; viaEmail: boolean }> {
+    const res = await fetch(`${API_URL}/auth/verify-email/request`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error((body as { error?: string })?.error || 'No pudimos enviar el código.');
+    if (body.alreadyVerified) return { code: '', viaEmail: false };
+    return { code: body.test_code || '', viaEmail: !!body.viaEmail };
+  }
+  async confirmEmailVerification(email: string, code: string): Promise<void> {
+    const res = await fetch(`${API_URL}/auth/verify-email/confirm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error((body as { error?: string })?.error || 'No pudimos verificar el email.');
+    // Actualizar la copia local del usuario
+    const current = load<User | null>('solooutlet_user', null);
+    if (current && norm(current.email) === norm(email)) {
+      persist('solooutlet_user', { ...current, emailVerified: true });
     }
   }
 }

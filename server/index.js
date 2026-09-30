@@ -150,8 +150,8 @@ app.post('/api/auth/register', async (req, res) => {
     const finalRole = isSellerApplication ? 'seller' : role === 'merchant_approved' ? 'merchant_approved' : 'buyer';
     const sellerStatus = isSellerApplication ? 'pending' : null;
     await pool.execute(
-      'INSERT INTO users (id, full_name, email, password_hash, role, store_name, is_staff, seller_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [id, fullName.trim(), emailNorm, hash, finalRole, storeName || null, isStaff, sellerStatus],
+      'INSERT INTO users (id, full_name, email, password_hash, role, store_name, is_staff, seller_status, email_verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [id, fullName.trim(), emailNorm, hash, finalRole, storeName || null, isStaff, sellerStatus, 0],
     );
     if (isSellerApplication) {
       await pool.execute(
@@ -175,7 +175,90 @@ app.post('/api/auth/register', async (req, res) => {
       await pool.execute('INSERT IGNORE INTO sellers (id, store_name, owner_email) VALUES (?, ?, ?)', [`sel-${Date.now()}`, storeName, emailNorm]);
     }
     const token = jwt.sign({ id, email: emailNorm, role: finalRole, store_name: storeName || null, is_staff: isStaff, seller_status: sellerStatus }, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id, fullName, email: emailNorm, role: finalRole, storeName: storeName || null } });
+    // Enviar código de verificación de email (no bloquea el registro: puede seguir comprando,
+    // pero la cuenta queda marcada como no verificada hasta confirmar).
+    try { await sendVerificationCode(emailNorm); } catch (e) { console.error('verify-mail:', e.message); }
+    res.json({ token, user: { id, fullName, email: emailNorm, role: finalRole, storeName: storeName || null, emailVerified: false }, verificationSent: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Verificación de email ──
+// El código se envía por email (Resend si está configurado). En memoria:
+// email → { codeHash, expiresAt (15 min), attempts }.
+const emailVerifications = new Map();
+
+async function sendEmailViaResend(to, subject, html) {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) throw new Error('RESEND_API_KEY no configurada');
+  const r = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: process.env.RESET_EMAIL_FROM || 'solooutlet <onboarding@resend.dev>',
+      to: [to],
+      subject,
+      html,
+    }),
+  });
+  if (!r.ok) throw new Error(`resend ${r.status}`);
+}
+
+async function sendVerificationCode(email) {
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const codeHash = await bcrypt.hash(code, 8);
+  emailVerifications.set(email, { codeHash, expiresAt: Date.now() + 15 * 60 * 1000, attempts: 0 });
+  try {
+    await sendEmailViaResend(
+      email,
+      `Verificá tu cuenta solooutlet: ${code}`,
+      `<p>¡Bienvenido a <strong>solooutlet</strong>!</p><p>Tu código de verificación es <strong style="font-size:20px;letter-spacing:4px">${code}</strong>.</p><p>Vence en 15 minutos. Si no creaste esta cuenta, ignorá este correo.</p>`,
+    );
+    return { viaEmail: true };
+  } catch {
+    // Sin servicio de email configurado: exponer el código solo si el modo demo lo permite.
+    if (process.env.ALLOW_RESET_CODE === '1') return { viaEmail: false, test_code: code };
+    return { viaEmail: false };
+  }
+}
+
+app.post('/api/auth/verify-email/request', async (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  if (!email) return res.status(400).json({ error: 'Falta el email' });
+  try {
+    const [rows] = await pool.execute('SELECT email_verified FROM users WHERE email = ?', [email]);
+    if (!rows.length) return res.status(404).json({ error: 'Cuenta no encontrada' });
+    if (rows[0].email_verified) return res.json({ ok: true, alreadyVerified: true });
+    const out = await sendVerificationCode(email);
+    res.json({ ok: true, ...out });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/auth/verify-email/confirm', async (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  const code = String(req.body?.code || '');
+  const pending = emailVerifications.get(email);
+  if (!pending) return res.status(400).json({ error: 'No hay una verificación pendiente para este email' });
+  if (Date.now() > pending.expiresAt) {
+    emailVerifications.delete(email);
+    return res.status(400).json({ error: 'El código venció. Pedí uno nuevo.' });
+  }
+  if (pending.attempts >= 5) {
+    emailVerifications.delete(email);
+    return res.status(400).json({ error: 'Demasiados intentos. Pedí un código nuevo.' });
+  }
+  const ok = await bcrypt.compare(code, pending.codeHash);
+  if (!ok) {
+    pending.attempts += 1;
+    return res.status(400).json({ error: 'Código incorrecto' });
+  }
+  try {
+    await pool.execute('UPDATE users SET email_verified = 1 WHERE email = ?', [email]);
+    emailVerifications.delete(email);
+    res.json({ ok: true, emailVerified: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -267,7 +350,7 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ error: 'Email o contraseña incorrectos' });
     }
     const token = jwt.sign({ id: u.id, email: u.email, role: u.role, store_name: u.store_name, is_staff: !!u.is_staff, seller_status: u.seller_status || null }, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id: u.id, fullName: u.full_name, email: u.email, role: u.role, storeName: u.store_name, phone: u.phone, address: u.address, city: u.city, postalCode: u.postal_code } });
+    res.json({ token, user: { id: u.id, fullName: u.full_name, email: u.email, role: u.role, storeName: u.store_name, phone: u.phone, address: u.address, city: u.city, postalCode: u.postal_code, emailVerified: !!u.email_verified } });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

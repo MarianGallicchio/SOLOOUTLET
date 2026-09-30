@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   CheckCircle2,
   Mail,
+  MailCheck,
   Lock,
   ArrowRight,
   MessageCircle,
@@ -22,7 +23,7 @@ import {
 } from 'lucide-react';
 
 export const AuthModal: React.FC = () => {
-  const { isAuthModalOpen, setIsAuthModalOpen, authInitialTab, loginUser, registerBuyer, requestPasswordReset, resetPassword, loginWithGoogle, submitMerchantApplication } = useStore();
+  const { isAuthModalOpen, setIsAuthModalOpen, authInitialTab, loginUser, registerBuyer, requestPasswordReset, resetPassword, requestEmailVerification, confirmEmailVerification, loginWithGoogle, submitMerchantApplication, showToast } = useStore();
 
   // Google Identity Services: el Client ID lo inyecta el backend/.env vía VITE_GOOGLE_CLIENT_ID.
   const GOOGLE_CLIENT_ID = (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) || '';
@@ -70,6 +71,12 @@ export const AuthModal: React.FC = () => {
 
   // Recuperación de contraseña: email → código → nueva contraseña
   const [resetStep, setResetStep] = useState<'idle' | 'email' | 'code'>('idle');
+
+  // Verificación de email tras el registro: email → código de 6 dígitos
+  const [verifyStep, setVerifyStep] = useState<'idle' | 'code'>('idle');
+  const [verifyEmail, setVerifyEmail] = useState('');
+  const [verifyCode, setVerifyCode] = useState('');
+  const [verifyMsg, setVerifyMsg] = useState<string | null>(null);
   const [resetEmail, setResetEmail] = useState('');
   const [resetCode, setResetCode] = useState('');
   const [resetNewPass, setResetNewPass] = useState('');
@@ -97,7 +104,25 @@ export const AuthModal: React.FC = () => {
     if (buyerMode === 'register') {
       if (!buyerName.trim()) { setBuyerError('Ingresá tu nombre y apellido.'); return; }
       const ok = await registerBuyer({ fullName: buyerName.trim(), email: buyerEmail.trim(), password: buyerPassword });
-      if (!ok) setBuyerError('No pudimos crear la cuenta: revisá el mensaje arriba o probá con otro email.');
+      if (!ok) {
+        setBuyerError('No pudimos crear la cuenta: revisá el mensaje arriba o probá con otro email.');
+      } else {
+        // Ciclo de cuentas completo: pasar a verificar el email con código
+        try {
+          const { code, viaEmail } = await requestEmailVerification(buyerEmail.trim());
+          setVerifyEmail(buyerEmail.trim());
+          setVerifyStep('code');
+          setVerifyMsg(viaEmail
+            ? 'Te enviamos un código de 6 dígitos por email (válido 15 minutos).'
+            : code
+              ? `Modo demostración (sin servidor de email): tu código es ${code}. En producción llega por correo.`
+              : 'No pudimos enviar el email, pero podés reenviar el código.');
+        } catch {
+          setVerifyMsg('No pudimos enviar el código ahora; podés verificar tu email después desde tu perfil.');
+          setVerifyEmail(buyerEmail.trim());
+          setVerifyStep('code');
+        }
+      }
     } else {
       const user = await loginUser(buyerEmail.trim(), undefined, buyerPassword);
       if (!user) {
@@ -106,6 +131,34 @@ export const AuthModal: React.FC = () => {
         // "Recordarme": cookie de preferencias con token aleatorio (30 días)
         rememberUser(user.email);
       }
+    }
+  };
+
+  const handleVerifyConfirm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setVerifyMsg(null);
+    if (verifyCode.length !== 6) { setVerifyMsg('El código tiene 6 dígitos.'); return; }
+    const ok = await confirmEmailVerification(verifyEmail, verifyCode);
+    if (ok) {
+      setVerifyStep('idle');
+      setVerifyCode('');
+      setIsAuthModalOpen(false);
+    } else {
+      setVerifyMsg('Código incorrecto o vencido. Probá de nuevo o reenvialo.');
+    }
+  };
+
+  const handleVerifyResend = async () => {
+    setVerifyMsg(null);
+    try {
+      const { code, viaEmail } = await requestEmailVerification(verifyEmail);
+      setVerifyMsg(viaEmail
+        ? 'Código reenviado. Revisá tu correo.'
+        : code
+          ? `Modo demostración: tu nuevo código es ${code}.`
+          : 'No pudimos reenviar ahora, probá en un momento.');
+    } catch {
+      setVerifyMsg('No pudimos reenviar el código.');
     }
   };
 
@@ -225,7 +278,63 @@ export const AuthModal: React.FC = () => {
         {activeTab === 'buyer' ? (
           <div className="p-6 sm:p-8 space-y-6">
             
-            {resetStep === 'idle' ? (
+            {verifyStep === 'code' ? (
+              /* ── VERIFICACIÓN DE EMAIL (post-registro) ── */
+              <div className="max-w-sm mx-auto space-y-4">
+                <div className="text-center">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
+                    <MailCheck className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 font-display">Verificá tu email</h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Te enviamos un código a <strong className="text-slate-700">{verifyEmail}</strong>. Ingresalo para completar tu cuenta.
+                  </p>
+                </div>
+                <form onSubmit={handleVerifyConfirm} className="space-y-3.5">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">Código de 6 dígitos</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={6}
+                      required
+                      autoFocus
+                      value={verifyCode}
+                      onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="123456"
+                      className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-600 text-center font-mono font-bold tracking-[0.4em]"
+                    />
+                  </div>
+                  {verifyMsg && (
+                    <p className="text-[11px] font-semibold bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-amber-800">{verifyMsg}</p>
+                  )}
+                  <button
+                    type="submit"
+                    className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-600/20 active:scale-98 cursor-pointer"
+                  >
+                    <MailCheck className="w-4 h-4" />
+                    <span>Verificar mi email</span>
+                  </button>
+                  <div className="flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={handleVerifyResend}
+                      className="text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer"
+                    >
+                      Reenviar código
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setVerifyStep('idle'); setIsAuthModalOpen(false); showToast('Podés verificar tu email después desde tu perfil.'); }}
+                      className="text-[11px] text-slate-500 hover:text-slate-800 cursor-pointer"
+                    >
+                      Verificar después
+                    </button>
+                  </div>
+                </form>
+              </div>
+            ) : resetStep === 'idle' ? (
             <>
             <div className="text-center max-w-sm mx-auto">
               <h3 className="text-lg font-bold text-slate-900 font-display">

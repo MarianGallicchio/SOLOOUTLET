@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS users (
   role          ENUM('buyer','merchant_candidate','merchant_approved') NOT NULL DEFAULT 'buyer',
   store_name    VARCHAR(120) NULL,
   is_staff      TINYINT(1)   NOT NULL DEFAULT 0,
+  email_verified TINYINT(1)  NOT NULL DEFAULT 0,
   created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

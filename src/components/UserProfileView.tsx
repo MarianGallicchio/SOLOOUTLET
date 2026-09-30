@@ -42,6 +42,9 @@ export const UserProfileView: React.FC = () => {
     openDispute,
     addAddress,
     removeAddress,
+    requestEmailVerification,
+    confirmEmailVerification,
+    showToast,
   } = useStore();
   const [newAddr, setNewAddr] = useState({ label: 'Casa', fullName: '', phone: '', address: '', city: '', postalCode: '' });
 
@@ -59,6 +62,33 @@ export const UserProfileView: React.FC = () => {
 
   // Re-buy action feedback state
   const [reBuyFeedbackId, setReBuyFeedbackId] = useState<string | null>(null);
+
+  // Verificación de email desde el perfil
+  const [verifyCodeInput, setVerifyCodeInput] = useState('');
+  const [verifyRequested, setVerifyRequested] = useState(false);
+
+  const emailVerified = !!(currentUser as { emailVerified?: boolean } | null)?.emailVerified;
+
+  const handleVerifyFromProfile = async () => {
+    if (!currentUser) return;
+    try {
+      const { code, viaEmail } = await requestEmailVerification(currentUser.email);
+      setVerifyRequested(true);
+      showToast(viaEmail
+        ? '📧 Código enviado a tu email (válido 15 min).'
+        : code
+          ? `📧 Modo demo: tu código es ${code}.`
+          : 'No pudimos enviar el código ahora.');
+    } catch {
+      showToast('⚠️ No pudimos enviar el código de verificación.');
+    }
+  };
+
+  const handleConfirmVerifyFromProfile = async () => {
+    if (!currentUser || verifyCodeInput.length !== 6) return;
+    const ok = await confirmEmailVerification(currentUser.email, verifyCodeInput);
+    if (ok) { setVerifyRequested(false); setVerifyCodeInput(''); }
+  };
 
 
 
@@ -202,6 +232,15 @@ export const UserProfileView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 pr-1 self-end sm:self-auto">
+          {!emailVerified && currentUser && (
+            <button
+              onClick={() => setCurrentView('profile')}
+              className="px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Verificá tu email para completar tu cuenta"
+            >
+              ⚠ Email sin verificar
+            </button>
+          )}
           <button
             onClick={() => setCurrentView('wishlist')}
             className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
@@ -713,9 +752,56 @@ export const UserProfileView: React.FC = () => {
             </form>
           )}
 
-          <div className="pt-3 border-t border-slate-100 flex items-center gap-2 text-[11px] text-slate-500">
-            <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>Datos protegidos para tus despachos y compras en solooutlet.</span>
+          {/* Estado de verificación del email */}
+          <div className={`pt-3 border-t border-slate-100 ${!emailVerified ? 'space-y-2' : 'flex items-center gap-2 text-[11px] text-slate-500'}`}>
+            {emailVerified ? (
+              <div className="flex items-center gap-2 text-[11px]">
+                <span className="inline-flex items-center gap-1 text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Email verificado
+                </span>
+                <span className="text-slate-500">{formData.email}</span>
+              </div>
+            ) : (
+              <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 space-y-2.5">
+                <div className="flex items-center gap-2 text-xs font-bold text-amber-900">
+                  ⚠️ Tu email no está verificado
+                </div>
+                <p className="text-[11px] text-amber-800 leading-relaxed">
+                  Verificá <strong>{formData.email}</strong> para asegurar tu cuenta y recibir avisos de tus pedidos.
+                </p>
+                {verifyRequested && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={verifyCodeInput}
+                      onChange={(e) => setVerifyCodeInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="Código de 6 dígitos"
+                      className="flex-1 px-3 py-2 text-xs rounded-xl border border-amber-300 focus:outline-none focus:border-amber-500 font-mono font-bold tracking-[0.3em] text-center"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleConfirmVerifyFromProfile}
+                      className="px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 cursor-pointer shrink-0"
+                    >
+                      Verificar
+                    </button>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={handleVerifyFromProfile}
+                  className="text-[11px] font-bold text-amber-900 hover:text-amber-950 underline cursor-pointer"
+                >
+                  {verifyRequested ? 'Reenviar código' : 'Verificar mi email ahora'}
+                </button>
+              </div>
+            )}
+            <div className="flex items-center gap-2 text-[11px] text-slate-500">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>Datos protegidos para tus despachos y compras en solooutlet.</span>
+            </div>
           </div>
         </div>
 
