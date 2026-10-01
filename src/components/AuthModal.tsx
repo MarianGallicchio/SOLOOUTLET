@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 
 export const AuthModal: React.FC = () => {
-  const { isAuthModalOpen, setIsAuthModalOpen, authInitialTab, loginUser, registerBuyer, requestPasswordReset, resetPassword, requestEmailVerification, confirmEmailVerification, loginWithGoogle, submitMerchantApplication, showToast } = useStore();
+  const { isAuthModalOpen, setIsAuthModalOpen, authInitialTab, loginUser, registerBuyer, requestPasswordReset, resetPassword, requestEmailVerification, confirmEmailVerification, loginWithGoogle, submitMerchantApplication, loginDemoSeller, showToast } = useStore();
 
   // Google Identity Services: el Client ID lo inyecta el backend/.env vía VITE_GOOGLE_CLIENT_ID.
   const GOOGLE_CLIENT_ID = (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) || '';
@@ -590,6 +590,13 @@ export const AuthModal: React.FC = () => {
                     Panel de vendedor: pedidos, stock, empleados, publicidad y liquidaciones.
                   </p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => void loginDemoSeller()}
+                  className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold cursor-pointer flex items-center justify-center gap-2 transition-colors"
+                >
+                  🎬 Entrar como vendedor demo (ElectroPlaza)
+                </button>
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 mb-1">Email de la empresa</label>
                   <input

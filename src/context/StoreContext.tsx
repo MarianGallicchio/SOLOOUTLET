@@ -96,6 +96,8 @@ interface StoreContextType {
   // Merchant Onboarding & Contact
   merchantApplications: MerchantApplication[];
   submitMerchantApplication: (data: Omit<MerchantApplication, 'id' | 'date' | 'status'>, password?: string) => Promise<void>;
+  /** Crea (si no existe) o loguea la cuenta vendedora de demo con datos precargados. */
+  loginDemoSeller: () => Promise<void>;
 
   // In-product Live Merchant Chat
   productChats: Record<string, ChatMessage[]>;
@@ -668,8 +670,41 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     showToast(`✓ ¡Tienda "${data.storeName}" creada! Bienvenido a tu panel vendedor.`);
   };
 
+  const loginDemoSeller = async (): Promise<void> => {
+    const email = 'ventas@electroplaza.com.ar';
+    const password = 'vendedor123';
+    try {
+      const existing = await auth.findByEmail(email);
+      if (existing && existing.role === 'merchant_approved') {
+        const user = await auth.login(email, password);
+        setCurrentUser(user);
+        setIsAuthModalOpen(false);
+        setActiveSellerName('ElectroPlaza');
+        setCurrentView('seller-workspace');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        showToast('✓ Sesión iniciada como ElectroPlaza (cuenta demo).');
+        return;
+      }
+      // No existe: registrar la tienda demo completa
+      await submitMerchantApplication(
+        {
+          storeName: 'ElectroPlaza',
+          contactPerson: 'Mariano (Demo)',
+          cuit: '20-12345678-9',
+          category: 'Tecnología',
+          estimatedStockVolume: '20-50 lotes/mes',
+          city: 'Buenos Aires',
+          email,
+          whatsapp: '+54 9 11 5555-5555',
+        },
+        password,
+      );
+    } catch (e) {
+      showToast(`⚠️ ${e instanceof Error ? e.message : 'No pudimos iniciar la demo vendedora.'}`);
+    }
+  };
+
   const openProductModal = (product: Product) => {
-    setSelectedProductModal(product);
     // Vistos recientemente (preferencias, últimos 10)
     pushRecentlyViewed(product.id);
   };
@@ -1322,6 +1357,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         openAuthModal,
         merchantApplications,
         submitMerchantApplication,
+        loginDemoSeller,
         productChats,
         sendProductChatMessage,
         pushNotifications,
