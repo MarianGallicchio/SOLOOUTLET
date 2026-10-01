@@ -98,6 +98,8 @@ interface StoreContextType {
   submitMerchantApplication: (data: Omit<MerchantApplication, 'id' | 'date' | 'status'>, password?: string) => Promise<void>;
   /** Crea (si no existe) o loguea la cuenta vendedora de demo con datos precargados. */
   loginDemoSeller: () => Promise<void>;
+  /** Crea (si no existe) o loguea la cuenta moderador/dueño de plataforma (admin@solooutlet.com). */
+  loginDemoMod: () => Promise<void>;
 
   // In-product Live Merchant Chat
   productChats: Record<string, ChatMessage[]>;
@@ -701,6 +703,28 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       );
     } catch (e) {
       showToast(`⚠️ ${e instanceof Error ? e.message : 'No pudimos iniciar la demo vendedora.'}`);
+    }
+  };
+
+  const loginDemoMod = async (): Promise<void> => {
+    const email = 'admin@solooutlet.com';
+    const password = 'moderador123';
+    try {
+      const existing = await auth.findByEmail(email);
+      if (!existing) {
+        // Crear cuenta plataforma (role buyer + email en PLATFORM_OWNER_EMAILS = owner)
+        const user = await auth.registerBuyer({ fullName: 'Moderación solooutlet', email, password });
+        setCurrentUser(user);
+      } else {
+        const user = await auth.login(email, password);
+        setCurrentUser(user);
+      }
+      setIsAuthModalOpen(false);
+      setCurrentView('admin');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      showToast('✓ Sesión iniciada como Moderación (dueño de plataforma).');
+    } catch (e) {
+      showToast(`⚠️ ${e instanceof Error ? e.message : 'No pudimos iniciar la sesión mod.'}`);
     }
   };
 
@@ -1358,6 +1382,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         merchantApplications,
         submitMerchantApplication,
         loginDemoSeller,
+        loginDemoMod,
         productChats,
         sendProductChatMessage,
         pushNotifications,
