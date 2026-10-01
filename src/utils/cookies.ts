@@ -106,7 +106,16 @@ export function getAllCookieNames(): string[] {
 
 export function getConsent(): CookieConsent | null {
   const raw = getCookie(CONSENT_COOKIE);
-  if (!raw) return null;
+  if (!raw) {
+    // Modo demo: auto-consentimiento mínimo para que el banner no tape la demo
+    if (new URLSearchParams(window.location.search).has('demo')) {
+      try {
+        saveConsent({ preferences: true, analytics: false, marketing: false });
+        return getConsent();
+      } catch { /* seguir con banner */ }
+    }
+    return null;
+  }
   try {
     const parsed = JSON.parse(raw) as CookieConsent;
     if (typeof parsed.preferences !== 'boolean') return null;

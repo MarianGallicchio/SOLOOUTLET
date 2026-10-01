@@ -215,13 +215,23 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return saved || [];
   });
 
-  const [currentView, setCurrentView] = useState<ViewType>('home');
+  // Vista inicial desde hash (#catalog, #vender, #ayuda, #profile) — útil para demos y capturas
+  const initialView = (() => {
+    const h = window.location.hash.replace('#', '') as ViewType;
+    return ['home', 'catalog', 'vender', 'admin', 'wishlist', 'profile', 'merchant-contact', 'view-publicar', 'seller-workspace', 'ayuda'].includes(h) ? h : 'home';
+  })();
+  const [currentView, setCurrentView] = useState<ViewType>(initialView);
   const [helpSection, setHelpSection] = useState<'garantia' | 'envios' | 'terminos' | null>(null);
   const [selectedStateFilter, setSelectedStateFilter] = useState<string | null>(null);
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   
-  const [selectedProductModal, setSelectedProductModal] = useState<Product | null>(null);
+  const [selectedProductModal, setSelectedProductModal] = useState<Product | null>(() => {
+    // Demo/capturas: ?open=<id> abre la ficha del producto al montar
+    const openId = new URLSearchParams(window.location.search).get('open');
+    if (!openId) return null;
+    return load('solooutlet_products', DEMO_PRODUCTS).find((p) => p.id === openId) ?? null;
+  });
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
