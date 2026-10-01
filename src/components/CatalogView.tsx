@@ -175,6 +175,7 @@ export const CatalogView: React.FC = () => {
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState<boolean>(false);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+  const lastGridKey = useRef('');
 
   const [onlyInStock, setOnlyInStock] = useState<boolean>(false);
   const [selectedTagFilter, setSelectedTagFilter] = useState<string | null>(null);
@@ -411,6 +412,15 @@ export const CatalogView: React.FC = () => {
     searchQuery,
     sortOption,
   ]);
+
+  // Stagger del grid: solo cuando cambia el set de productos filtrados
+  useEffect(() => {
+    const key = filteredProducts.map((p) => p.id).join(',');
+    if (key !== lastGridKey.current && gridRef.current) {
+      lastGridKey.current = key;
+      animateGridIn('.group', gridRef.current, { delay: 50 });
+    }
+  }, [filteredProducts]);
 
   const activeFiltersCount = [
     Boolean(selectedTagFilter),
@@ -1025,7 +1035,7 @@ export const CatalogView: React.FC = () => {
         {/* PRODUCTS GRID AREA */}
         <div className="flex-1 min-w-0 w-full">
           {filteredProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5" ref={(el) => { gridRef.current = el; animateGridIn('.group', el, { delay: 50 }); }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5" ref={gridRef}>
               {filteredProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}

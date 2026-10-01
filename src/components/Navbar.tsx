@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { isMerchant } from '../utils/sellerWorkspace';
 import { Package, ShoppingBag, Heart, LogIn, PackagePlus, Store } from 'lucide-react';
@@ -19,6 +19,7 @@ const GRADE_PILLS = [
  * - Staff plataforma: + Admin global.
  */
 export const Navbar: React.FC = () => {
+  const cartBadgeRef = useRef<HTMLSpanElement>(null);
   const {
     currentView, setCurrentView, cart, setIsCartOpen, wishlist,
     currentUser, openAuthModal, selectedStateFilter,
@@ -26,6 +27,15 @@ export const Navbar: React.FC = () => {
   } = useStore();
 
   const totalCartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+  const prevCartCount = useRef(0);
+
+  // Pop del badge solo cuando cambia la cantidad del carrito (no en cada render)
+  useEffect(() => {
+    if (totalCartCount > prevCartCount.current && cartBadgeRef.current) {
+      animatePop(cartBadgeRef.current);
+    }
+    prevCartCount.current = totalCartCount;
+  }, [totalCartCount]);
   const seller = isMerchant(currentUser);
 
   const goPill = (condition: string | null) => {
@@ -153,7 +163,7 @@ export const Navbar: React.FC = () => {
             <span className="hidden sm:inline text-xs font-bold">Carrito</span>
             {totalCartCount > 0 && (
               <span
-                ref={(el) => { if (el) { animatePop(el); } }}
+                ref={cartBadgeRef}
                 className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-xs font-bold text-white bg-[#004AC6] rounded-full shadow-sm"
               >
                 {totalCartCount}

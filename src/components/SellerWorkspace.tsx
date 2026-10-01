@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../context/StoreContext';
 import { isApiMode, API_URL, load } from '../data/db';
 import { AuthSession } from '../data/auth';
@@ -56,6 +56,14 @@ export const SellerWorkspace: React.FC = () => {
   } = useStore();
 
   const [tab, setTab] = useState<WorkspaceModule>('resumen');
+  const kpiGridRef = useRef<HTMLDivElement>(null);
+
+  // Stagger de KPIs solo al montar la pestaña estadísticas
+  useEffect(() => {
+    if (tab === 'estadisticas' && kpiGridRef.current) {
+      animateGridIn(':scope > div', kpiGridRef.current, { delay: 70 });
+    }
+  }, [tab]);
   // Modo "interface de prueba": datos ficticios para mostrar cómo se ve el panel
   // con actividad real, sin tocar los datos verdaderos de la tienda.
   const [previewMode, setPreviewMode] = useState(false);
@@ -396,7 +404,7 @@ export const SellerWorkspace: React.FC = () => {
             </div>
 
             {/* KPI Cards for Seller */}
-            <div className="kpi-grid grid grid-cols-2 lg:grid-cols-4 gap-4" ref={(el) => { animateGridIn(':scope > div', el, { delay: 70 }); }}>
+            <div className="kpi-grid grid grid-cols-2 lg:grid-cols-4 gap-4" ref={kpiGridRef}>
               <div className="p-4 rounded-2xl bg-white/70 border border-slate-200/80 shadow-2xs">
                 <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Facturación Bruta</div>
                 <AnimatedKpiValue value={myOrders.reduce((s, o) => s + o.total, 0)} format={formatPrice} />

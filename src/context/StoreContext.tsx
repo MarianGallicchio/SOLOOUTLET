@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { Product, CartItem, Order, CustomerData, PaymentDetails, ViewType, Review, User, MerchantApplication, ChatMessage, PushNotification, Seller, Payout, SellerMember, SellerRole, AdCampaign, IntegrationKey, SavedAddress, DisputeReason, DISPUTE_REASONS } from '../types';
 import { INITIAL_PRODUCTS } from '../data/mockData';
 import { calcSettlement, releaseDateFrom, COMMISSION_CONFIG, resolveCoupon, resolveShipping } from '../utils/commissions';
@@ -450,6 +450,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
     }, 750);
   };
+
+  // Animación del toast: solo cuando aparece un mensaje nuevo
+  const lastToastRef = useRef<string | null>(null);
+  const toastElRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (toastMessage && lastToastRef.current !== toastMessage && toastElRef.current) {
+      animateToastIn(toastElRef.current);
+    }
+    lastToastRef.current = toastMessage;
+  }, [toastMessage]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -1346,7 +1356,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       {/* Toast Notification Container */}
       {toastMessage && (
         <div className="fixed bottom-20 md:bottom-8 right-4 left-4 md:left-auto md:w-96 z-50 pointer-events-none">
-          <div ref={(el) => { animateToastIn(el); }} className="bg-slate-900 text-white text-sm font-medium px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 border border-slate-700/80">
+          <div ref={toastElRef} className="bg-slate-900 text-white text-sm font-medium px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 border border-slate-700/80">
             <span className="flex-1">{toastMessage}</span>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../context/StoreContext';
 import { Hero } from './Hero';
 import { ProductCard } from './ProductCard';
@@ -7,6 +7,7 @@ import { animateGridIn } from '../utils/animations';
 
 const useCountdown = () => {
   const [seconds, setSeconds] = useState(4 * 3600 + 27 * 60 + 58);
+
   useEffect(() => {
     const id = setInterval(() => setSeconds((s) => (s > 0 ? s - 1 : 4 * 3600 + 27 * 60 + 58)), 1000);
     return () => clearInterval(id);
@@ -59,6 +60,16 @@ const GRADES = [
 export const HomeView: React.FC = () => {
   const { products, setCurrentView, goToStateFilter } = useStore();
   const countdown = useCountdown();
+  const featuredRef = useRef<HTMLDivElement>(null);
+  const discountRef = useRef<HTMLDivElement>(null);
+  const gradesRef = useRef<HTMLDivElement>(null);
+
+  // Stagger una sola vez al montar (evita parpadeo en re-renders)
+  useEffect(() => {
+    animateGridIn('.group', featuredRef.current, { delay: 70 });
+    animateGridIn('.group', discountRef.current, { delay: 70 });
+    animateGridIn(':scope > div', gradesRef.current, { delay: 90 });
+  }, []);
 
   const featuredProducts = products.slice(0, 8);
   const topDiscount = [...products].sort((a, b) => b.discount - a.discount).slice(0, 4);
@@ -99,7 +110,7 @@ export const HomeView: React.FC = () => {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6" ref={(el) => { animateGridIn('.group', el, { delay: 70 }); }}>
+        <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6" ref={featuredRef}>
           {featuredProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
@@ -126,7 +137,7 @@ export const HomeView: React.FC = () => {
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
-          <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6" ref={(el) => { animateGridIn('.group', el, { delay: 70 }); }}>
+          <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6" ref={discountRef}>
             {topDiscount.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
@@ -149,7 +160,7 @@ export const HomeView: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" ref={(el) => { animateGridIn(':scope > div', el, { delay: 90 }); }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" ref={gradesRef}>
             {GRADES.map((g) => (
               <div key={g.grade} className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col">
                 <span className={`self-start px-2.5 py-1 rounded-lg text-[11px] font-extrabold ${g.pill}`}>
