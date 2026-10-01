@@ -8,6 +8,21 @@ import { SellerRole, Order } from '../types';
 import { animateGridIn, animateCounter } from '../utils/animations';
 import { COURIERS, CourierId, SHIPMENT_STATUS_LABEL, quoteShipment, isPickupOverdue, estimateWeightKg } from '../utils/logistics';
 
+/** Código de barras simulado (visual): barras determinísticas a partir del tracking. */
+const BarcodeSim: React.FC<{ code: string }> = ({ code }) => {
+  const bars = Array.from(code).flatMap((ch) => {
+    const n = ch.charCodeAt(0);
+    return [n % 3 + 1, (n >> 2) % 2 + 1, (n >> 4) % 3 + 1];
+  });
+  return (
+    <div className="flex items-end gap-px h-10" aria-hidden>
+      {bars.map((w, i) => (
+        <div key={i} style={{ width: w, height: '100%', background: i % 2 ? '#fff' : '#0f172a' }} />
+      ))}
+    </div>
+  );
+};
+
 /** KPI con valor que cuenta de 0 al final al montar. */
 const AnimatedKpiValue: React.FC<{ value: number; format: (v: number) => string }> = ({ value, format }) => {
   const ref = React.useRef<HTMLDivElement>(null);
@@ -69,6 +84,7 @@ export const SellerWorkspace: React.FC = () => {
   const [previewMode, setPreviewMode] = useState(false);
   const [labelOrder, setLabelOrder] = useState<Order | null>(null);
   const [labelCourier, setLabelCourier] = useState<CourierId>('andreani');
+  const [printOrder, setPrintOrder] = useState<Order | null>(null);
   const [newStore, setNewStore] = useState('');
   const [memberForm, setMemberForm] = useState({ name: '', email: '', role: 'ventas' as SellerRole });
   const [campForm, setCampForm] = useState({ name: '', budget: 10000, productIds: [] as string[] });
@@ -519,13 +535,18 @@ export const SellerWorkspace: React.FC = () => {
                 </div>
                 <div className="text-xs text-slate-500">
                   {o.items.map((i) => `${i.quantity}× ${i.product.title}`).join(' · ')}
-                </div>
-                {o.shipment && (
+                </div>                  {o.shipment && (
                   <div className={`flex flex-wrap items-center gap-3 text-[11px] rounded-lg px-3 py-2 border ${isPickupOverdue(o) ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
                     <span className="font-mono font-bold">📦 {o.shipment.trackingNumber}</span>
                     <span>{o.shipment.courierName}</span>
                     <span className="font-bold">{SHIPMENT_STATUS_LABEL[o.shipment.status]}</span>
                     <span>Llega: {new Date(o.shipment.etaDate).toLocaleDateString('es-AR')}</span>
+                    <button
+                      onClick={guard(() => setPrintOrder(o))}
+                      className="px-2.5 py-1 rounded-lg bg-white border border-slate-300 text-[11px] font-bold text-slate-700 hover:bg-slate-100 cursor-pointer"
+                    >
+                      🖨️ Imprimir etiqueta
+                    </button>
                     {isPickupOverdue(o) && <span className="font-bold">⚠️ SLA vencido: el courier no retiró en 48 h — el pago queda retenido</span>}
                   </div>
                 )}
@@ -883,6 +904,52 @@ export const SellerWorkspace: React.FC = () => {
           </div>
         </div>
       ))}
+
+      {/* MODAL: Etiqueta imprimible */}
+      {printOrder?.shipment && (() => {
+        const s = printOrder.shipment;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-slate-950/60" onClick={() => setPrintOrder(null)} />
+            <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-5">
+              {/* Etiqueta */}
+              <div id="shipping-label" className="border-2 border-slate-900 rounded-lg p-4 space-y-3 bg-white">
+                <div className="flex items-center justify-between border-b border-slate-300 pb-2">
+                  <span className="font-black text-slate-900 text-sm">solo<span className="text-[#004AC6]">outlet</span> · {s.courierName}</span>
+                  <span className="text-[10px] font-bold text-slate-500">ENVÍO ESTÁNDAR</span>
+                </div>
+                <div>
+                  <div className="text-[9px] font-bold uppercase text-slate-500">Destinatario</div>
+                  <div className="text-sm font-extrabold text-slate-900">{printOrder.customer.fullName}</div>
+                  <div className="text-xs text-slate-700">{printOrder.customer.address}</div>
+                  <div className="text-xs text-slate-700">{printOrder.customer.city} — CP {printOrder.customer.postalCode}</div>
+                  <div className="text-xs text-slate-700">Tel: {printOrder.customer.phone}</div>
+                </div>
+                <div>
+                  <div className="text-[9px] font-bold uppercase text-slate-500">Remitente</div>
+                  <div className="text-xs font-bold text-slate-900">{printOrder.sellerName || 'Vendedor'} · vía solooutlet</div>
+                </div>
+                <div className="flex flex-col items-center gap-1 pt-1">
+                  <BarcodeSim code={s.trackingNumber} />
+                  <span className="font-mono text-xs font-bold text-slate-900 tracking-widest">{s.trackingNumber}</span>
+                  <span className="text-[9px] text-slate-500">Peso: {s.weightKg.toFixed(1)} kg · Llega est.: {new Date(s.etaDate).toLocaleDateString('es-AR')}</span>
+                </div>
+              </div>
+              <div className="flex gap-2 mt-4">
+                <button onClick={() => setPrintOrder(null)} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer">
+                  Cerrar
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-[#004AC6] hover:bg-[#1D4ED8] text-white text-xs font-bold cursor-pointer"
+                >
+                  🖨️ Imprimir / Guardar PDF
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* MODAL: Generar etiqueta de envío (auto-logística demo) */}
       {labelOrder && (() => {

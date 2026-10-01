@@ -110,3 +110,10 @@
   background: #94a3b8;
 }
 
+/* Imprimir solo la etiqueta de envío */
+@media print {
+  body * { visibility: hidden; }
+  #shipping-label, #shipping-label * { visibility: visible; }
+  #shipping-label { position: fixed; inset: 0; margin: 0; width: 100%; }
+}
+

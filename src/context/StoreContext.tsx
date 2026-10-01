@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { Product, CartItem, Order, CustomerData, PaymentDetails, ViewType, Review, User, MerchantApplication, ChatMessage, PushNotification, Seller, Payout, SellerMember, SellerRole, AdCampaign, IntegrationKey, SavedAddress, DisputeReason, DISPUTE_REASONS } from '../types';
-import { INITIAL_PRODUCTS } from '../data/mockData';
+import { INITIAL_PRODUCTS, DEMO_PRODUCTS, DEMO_ORDERS } from '../data/mockData';
 import { calcSettlement, releaseDateFrom, COMMISSION_CONFIG, resolveCoupon, resolveShipping } from '../utils/commissions';
 import { DEFAULT_INTEGRATIONS } from '../utils/sellerWorkspace';
 import { load, persist, forget, isApiMode, API_URL } from '../data/db';
@@ -158,15 +158,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   } catch { /* almacenamiento bloqueado: la app sigue normal */ }
 
+  // Precarga demo: solo si no hay catálogo guardado (no pisa datos reales)
+  const hasSavedCatalog = !!localStorage.getItem('solooutlet_products');
   const [products, setProducts] = useState<Product[]>(() =>
-    load('solooutlet_products', INITIAL_PRODUCTS));
+    load('solooutlet_products', hasSavedCatalog ? INITIAL_PRODUCTS : (INITIAL_PRODUCTS.length ? INITIAL_PRODUCTS : DEMO_PRODUCTS)));
 
   const [cart, setCart] = useState<CartItem[]>(() =>
     load('solooutlet_cart', [] as CartItem[]));
 
     // Migración: órdenes viejas sin settlement reciben cálculo automático retroactivo
   const [orders, setOrders] = useState<Order[]>(() => {
-    const saved = load('solooutlet_orders', [] as Order[]);
+    const saved = load('solooutlet_orders', hasSavedCatalog ? [] as Order[] : DEMO_ORDERS);
     return saved.map((o) => {
       if (o.settlement) return o;
       const settlement = calcSettlement(o.total, o.paymentDetails.method);

@@ -1,10 +1,181 @@
 import { Product, Order } from '../types';
+import { imgLaptop, imgTv, imgEspresso, imgHeadphones } from '../assets/images';
 
 /**
- * Estado inicial LIMPIO para producción / demostración.
- * El catálogo y los pedidos arrancan vacíos: los productos los publican
- * los vendedores reales desde su panel. Nada de datos de referencia.
+ * Datos DEMO precargados para presentaciones.
+ * Solo se activan en modo demo (?demo=1 o GitHub Pages), nunca en producción con backend,
+ * y solo si el localStorage no tiene catálogo propio (no pisa datos reales).
  */
-export const INITIAL_PRODUCTS: Product[] = [];
+const D = (daysAgo: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  return d.toISOString().split('T')[0];
+};
 
+/** Estado inicial vacío (producción con backend): el catálogo lo cargan los vendedores. */
+export const INITIAL_PRODUCTS: Product[] = [];
 export const INITIAL_ORDERS: Order[] = [];
+
+export const DEMO_PRODUCTS: Product[] = [
+  {
+    id: 'demo-p1',
+    title: 'Notebook HP 15" Core i5 12° gen — Devolución comercial',
+    vendor: 'ElectroPlaza',
+    vendorRating: 4.8,
+    estado: 'Devolución',
+    cat: 'Tecnología',
+    price: 489999,
+    originalPrice: 899999,
+    discount: 46,
+    image: imgLaptop,
+    stock: 3,
+    conditionDetails: 'Devolución por arrepentimiento (14 días). Sin uso aparente, caja completa.',
+    description: 'Notebook devuelta dentro del plazo legal. Peritada por nuestro equipo técnico: batería al 98%, sin rayas ni detalles estéticos. Windows activado, lista para usar.',
+    warrantyDays: 90,
+    specs: ['Intel Core i5-1235U', '8 GB RAM DDR4', 'SSD 512 GB NVMe', 'Pantalla FHD 15,6"'],
+    isFeatured: true,
+    createdAt: D(2),
+    sku: 'EP-NB-001',
+    rating: 4.7,
+    reviewCount: 12,
+    brand: 'HP',
+    model: '15-fd0250la',
+    includes: ['Cargador original', 'Caja completa', 'Factura'],
+    tags: ['Tecnología', 'Notebook'],
+  },
+  {
+    id: 'demo-p2',
+    title: 'Smart TV Samsung 55" 4K UHD — Caja abierta',
+    vendor: 'ElectroPlaza',
+    vendorRating: 4.8,
+    estado: 'Sin caja',
+    cat: 'Electrodomésticos',
+    price: 549999,
+    originalPrice: 999999,
+    discount: 45,
+    image: imgTv,
+    stock: 2,
+    conditionDetails: 'Pantalla impecable. Caja dañada en transporte, producto verificado 10/10.',
+    description: 'TV con detalle estético únicamente en el embalaje. Peritaje técnico completo: píxeles OK, HDR funcionando, sin manchas ni píxeles muertos.',
+    warrantyDays: 180,
+    specs: ['55" 4K UHD', 'Tizen Smart TV', 'HDR10+', '3 HDMI / 2 USB'],
+    isFeatured: true,
+    createdAt: D(1),
+    sku: 'EP-TV-002',
+    rating: 4.9,
+    reviewCount: 8,
+    brand: 'Samsung',
+    model: 'UN55BU8000',
+    includes: ['Control remoto', 'Base de piso', 'Cable de alimentación'],
+    tags: ['Electro', 'Smart TV'],
+  },
+  {
+    id: 'demo-p3',
+    title: 'Cafetera Espresso DeLonghi Dedica — Reacondicionada',
+    vendor: 'ElectroPlaza',
+    vendorRating: 4.8,
+    estado: 'Reacondicionado',
+    cat: 'Electrodomésticos',
+    price: 189999,
+    originalPrice: 349999,
+    discount: 46,
+    image: imgEspresso,
+    stock: 5,
+    conditionDetails: 'Reacondicionada por servicio técnico oficial. Bomba nueva, probada 30 días.',
+    description: 'Unidad de exhibición reacondicionada con bomba reemplazada por servicio oficial. Incluye garantía extendida.',
+    warrantyDays: 120,
+    specs: ['15 bar de presión', 'Depósito 1,1 L', 'Vaporizador para latte', 'Acero inoxidable'],
+    isFeatured: true,
+    createdAt: D(3),
+    sku: 'EP-CAF-003',
+    rating: 4.6,
+    reviewCount: 15,
+    brand: 'DeLonghi',
+    model: 'EC685M',
+    includes: ['Portafiltro doble', 'Cuchara dosificadora', 'Manual'],
+    tags: ['Electro', 'Cafetera'],
+  },
+  {
+    id: 'demo-p4',
+    title: 'Auriculares Sony WH-1000XM4 — Detalle estético mínimo',
+    vendor: 'ElectroPlaza',
+    vendorRating: 4.8,
+    estado: 'Rayado',
+    cat: 'Tecnología',
+    price: 149999,
+    originalPrice: 329999,
+    discount: 55,
+    image: imgHeadphones,
+    stock: 4,
+    conditionDetails: 'Micro-raya en diadema (no afecta uso). Audio y ANC verificados 10/10.',
+    description: 'Grado B con detalle estético mínimo declarado en foto. Cancelación de ruido funcionando perfectamente.',
+    warrantyDays: 90,
+    specs: ['ANC industry-leading', '30 h de batería', 'Bluetooth 5.0', 'Plegable con estuche'],
+    isFeatured: true,
+    createdAt: D(1),
+    sku: 'EP-AUR-004',
+    rating: 4.8,
+    reviewCount: 22,
+    brand: 'Sony',
+    model: 'WH-1000XM4',
+    includes: ['Estuche rígido', 'Cable USB-C', 'Cable jack 3,5'],
+    tags: ['Tecnología', 'Audio'],
+  },
+];
+
+const settle = (gross: number) => {
+  const rate = gross <= 50000 ? 0.10 : 0.08;
+  const platformFee = Math.max(Math.round(gross * rate), 100);
+  return { gross, platformFee, gatewayFee: Math.round(gross * 0.019), netPayout: gross - platformFee - Math.round(gross * 0.019), rateApplied: rate };
+};
+
+export const DEMO_ORDERS: Order[] = [
+  {
+    id: 'demo-o1',
+    orderNumber: 'SO-DEMO01',
+    date: D(6),
+    customer: { fullName: 'Laura Giménez', email: 'laura@test.com', phone: '+54 9 11 4455-7788', address: 'Av. Santa Fe 3455, 6° B', city: 'Buenos Aires', postalCode: '1425' },
+    items: [{ product: DEMO_PRODUCTS[3], quantity: 1, unitPrice: DEMO_PRODUCTS[3].price }],
+    subtotal: DEMO_PRODUCTS[3].price,
+    discountAmount: 0,
+    shipping: 3490,
+    total: DEMO_PRODUCTS[3].price + 3490,
+    paymentDetails: { method: 'mercadopago', shippingOption: 'standard', mpTransactionId: 'MP-DEMO-8841' },
+    status: 'completado',
+    settlement: settle(DEMO_PRODUCTS[3].price),
+    sellerName: 'ElectroPlaza',
+    payoutStatus: 'transferido',
+  },
+  {
+    id: 'demo-o2',
+    orderNumber: 'SO-DEMO02',
+    date: D(3),
+    customer: { fullName: 'Diego Fernández', email: 'diego@test.com', phone: '+54 9 351 222-3344', address: 'Bv. San Juan 850', city: 'Córdoba', postalCode: '5000' },
+    items: [{ product: DEMO_PRODUCTS[0], quantity: 1, unitPrice: DEMO_PRODUCTS[0].price }],
+    subtotal: DEMO_PRODUCTS[0].price,
+    discountAmount: 0,
+    shipping: 4380,
+    total: DEMO_PRODUCTS[0].price + 4380,
+    paymentDetails: { method: 'credit_card', cardLast4: '4455', installments: 6, installmentAmount: 82400, shippingOption: 'standard' },
+    status: 'despachado',
+    settlement: settle(DEMO_PRODUCTS[0].price),
+    sellerName: 'ElectroPlaza',
+    payoutStatus: 'pendiente',
+  },
+  {
+    id: 'demo-o3',
+    orderNumber: 'SO-DEMO03',
+    date: D(1),
+    customer: { fullName: 'Carla Ruiz', email: 'carla@test.com', phone: '+54 9 11 6677-9900', address: 'Calle 12 N° 780', city: 'La Plata', postalCode: '1900' },
+    items: [{ product: DEMO_PRODUCTS[2], quantity: 1, unitPrice: DEMO_PRODUCTS[2].price }],
+    subtotal: DEMO_PRODUCTS[2].price,
+    discountAmount: 0,
+    shipping: 3490,
+    total: DEMO_PRODUCTS[2].price + 3490,
+    paymentDetails: { method: 'debit_card', cardLast4: '8821', shippingOption: 'standard' },
+    status: 'en_preparacion',
+    settlement: settle(DEMO_PRODUCTS[2].price),
+    sellerName: 'ElectroPlaza',
+    payoutStatus: 'pendiente',
+  },
+];

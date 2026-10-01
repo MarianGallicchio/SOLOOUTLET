@@ -236,6 +236,28 @@ export const VenderView: React.FC = () => {
         <div className="absolute right-0 bottom-0 translate-x-12 translate-y-12 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
       </div>
 
+      {/* Cómo funciona: 4 pilares del anclaje solooutlet */}
+      <div className="mb-12">
+        <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-display text-center mb-2">Vos vendés. Nosotros anclamos el resto.</h2>
+        <p className="text-xs sm:text-sm text-slate-500 text-center mb-8 max-w-2xl mx-auto">
+          solooutlet es la capa de confianza entre tu comercio y el comprador: pagos, logística y trazabilidad sin que muevas un dedo de tu depósito.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { icon: '💳', title: 'Pagos protegidos', desc: 'El pago del comprador queda retenido por la plataforma y se libera al confirmarse la entrega. Split automático: tu neto directo a Mercado Pago.' },
+            { icon: '📦', title: 'Logística incluida', desc: 'Generás la etiqueta con Andreani/OCA/Correo desde el panel, con tracking en vivo para el comprador. Vos solo despachás.' },
+            { icon: '🛡️', title: 'Confianza certificada', desc: 'Sistema de grados con peritaje y fotos reales obligatorias. Las ventas son finales: sin devoluciones por arrepentimiento.' },
+            { icon: '📊', title: 'Panel profesional', desc: 'Métricas en vivo, empleados con roles, publicidad e integraciones. Liquidaciones automáticas sin planillas de cálculo.' },
+          ].map((p) => (
+            <div key={p.title} className="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs hover:shadow-md transition-shadow">
+              <div className="text-2xl mb-2">{p.icon}</div>
+              <div className="text-sm font-extrabold text-slate-900 mb-1">{p.title}</div>
+              <div className="text-xs text-slate-600 leading-relaxed">{p.desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Mandatory Merchant Verification Notice */}
       <div className="bg-amber-50/90 border border-amber-200/90 rounded-2xl p-5 mb-12 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm stat-card-3d">
         <div className="flex items-start gap-3.5">
