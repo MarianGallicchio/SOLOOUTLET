@@ -731,6 +731,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const openProductModal = (product: Product) => {
+    setSelectedProductModal(product);
     // Vistos recientemente (preferencias, últimos 10)
     pushRecentlyViewed(product.id);
   };
