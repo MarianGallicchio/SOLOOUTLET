@@ -6,6 +6,7 @@ import { formatPrice } from '../utils/formatters';
 import { canAccessModule, roleLabel, SELLER_ROLES, INTEGRATION_CATALOG, WorkspaceModule, isPlatformOwner } from '../utils/sellerWorkspace';
 import { SellerRole, Order } from '../types';
 import { animateGridIn, animateCounter } from '../utils/animations';
+import { COURIERS, CourierId, SHIPMENT_STATUS_LABEL, quoteShipment, isPickupOverdue, estimateWeightKg } from '../utils/logistics';
 
 /** KPI con valor que cuenta de 0 al final al montar. */
 const AnimatedKpiValue: React.FC<{ value: number; format: (v: number) => string }> = ({ value, format }) => {
@@ -49,6 +50,7 @@ export const SellerWorkspace: React.FC = () => {
     createSellerWorkspace, inviteMember, updateMemberRole, toggleMemberActive,
     removeMember, createAdCampaign, toggleAdCampaign, toggleIntegration,
     products, orders, updateOrderStatus, updateProductStock, updateProductPrice,
+    createOrderShipment, advanceOrderTracking,
     deleteProduct, requestSellerPayout, payouts,
     currentUser, openAuthModal, setCurrentView, showToast,
   } = useStore();
@@ -57,6 +59,8 @@ export const SellerWorkspace: React.FC = () => {
   // Modo "interface de prueba": datos ficticios para mostrar cómo se ve el panel
   // con actividad real, sin tocar los datos verdaderos de la tienda.
   const [previewMode, setPreviewMode] = useState(false);
+  const [labelOrder, setLabelOrder] = useState<Order | null>(null);
+  const [labelCourier, setLabelCourier] = useState<CourierId>('andreani');
   const [newStore, setNewStore] = useState('');
   const [memberForm, setMemberForm] = useState({ name: '', email: '', role: 'ventas' as SellerRole });
   const [campForm, setCampForm] = useState({ name: '', budget: 10000, productIds: [] as string[] });
@@ -473,13 +477,32 @@ export const SellerWorkspace: React.FC = () => {
                       <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">🚨 Disputa: {o.dispute.reasonLabel}</span>
                     )}
                   </div>
-                  {next && (
+                  {next && !o.shipment && o.status === 'en_preparacion' && (
                     <button
-                      onClick={guard(() => updateOrderStatus(o.id, next))}
-                      className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-bold hover:bg-emerald-700 cursor-pointer inline-flex items-center gap-1"
+                      onClick={guard(() => setLabelOrder(o))}
+                      className="px-3 py-1.5 rounded-lg bg-[#004AC6] text-white text-[11px] font-bold hover:bg-[#1D4ED8] cursor-pointer inline-flex items-center gap-1"
                     >
                       <Truck className="w-3.5 h-3.5" />
-                      {next === 'despachado' ? 'Marcar despachado' : 'Marcar entregado'}
+                      Generar etiqueta de envío
+                    </button>
+                  )}
+                  {o.shipment && o.shipment.status !== 'delivered' && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={guard(() => advanceOrderTracking(o.id))}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-bold hover:bg-emerald-700 cursor-pointer inline-flex items-center gap-1"
+                      >
+                        <Truck className="w-3.5 h-3.5" />
+                        Simular escaneo del courier
+                      </button>
+                    </div>
+                  )}
+                  {next && !o.shipment && o.status === 'despachado' && (
+                    <button
+                      onClick={guard(() => updateOrderStatus(o.id, next))}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-bold hover:bg-emerald-700 cursor-pointer"
+                    >
+                      Marcar entregado
                     </button>
                   )}
                 </div>
@@ -489,6 +512,15 @@ export const SellerWorkspace: React.FC = () => {
                 <div className="text-xs text-slate-500">
                   {o.items.map((i) => `${i.quantity}× ${i.product.title}`).join(' · ')}
                 </div>
+                {o.shipment && (
+                  <div className={`flex flex-wrap items-center gap-3 text-[11px] rounded-lg px-3 py-2 border ${isPickupOverdue(o) ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
+                    <span className="font-mono font-bold">📦 {o.shipment.trackingNumber}</span>
+                    <span>{o.shipment.courierName}</span>
+                    <span className="font-bold">{SHIPMENT_STATUS_LABEL[o.shipment.status]}</span>
+                    <span>Llega: {new Date(o.shipment.etaDate).toLocaleDateString('es-AR')}</span>
+                    {isPickupOverdue(o) && <span className="font-bold">⚠️ SLA vencido: el courier no retiró en 48 h — el pago queda retenido</span>}
+                  </div>
+                )}
                 <div className="flex items-center gap-4 text-xs pt-1 border-t border-slate-100">
                   <span>Bruto <strong className="tabular-nums">{formatPrice(o.settlement?.gross ?? o.total)}</strong></span>
                   <span className="text-slate-400">Comisión −{formatPrice(o.settlement?.platformFee ?? 0)}</span>
@@ -843,6 +875,62 @@ export const SellerWorkspace: React.FC = () => {
           </div>
         </div>
       ))}
+
+      {/* MODAL: Generar etiqueta de envío (auto-logística demo) */}
+      {labelOrder && (() => {
+        const weight = labelOrder.items.reduce((s, i) => s + estimateWeightKg(i.product.cat) * i.quantity, 0);
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-slate-950/60" onClick={() => setLabelOrder(null)} />
+            <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 space-y-4">
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-wider text-[#004AC6]">Auto-logística solooutlet</div>
+                <h3 className="text-base font-extrabold text-slate-900 mt-0.5">Generar etiqueta · {labelOrder.orderNumber}</h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  Destino: <strong>{labelOrder.customer.city}</strong> · Peso estimado: <strong>{weight.toFixed(1)} kg</strong>
+                </p>
+              </div>
+              <div className="space-y-2">
+                {COURIERS.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => setLabelCourier(c.id)}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border text-left cursor-pointer transition-all ${
+                      labelCourier === c.id ? 'border-[#004AC6] bg-blue-50/60 ring-2 ring-blue-500/20' : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <div>
+                      <div className="text-xs font-bold text-slate-900">{c.name}</div>
+                      <div className="text-[10px] text-slate-500">Llega en ~{c.etaDays} día(s) hábil{c.etaDays > 1 ? 'es' : ''}</div>
+                    </div>
+                    <div className="text-xs font-extrabold tabular-nums text-slate-900">
+                      {quoteShipment(c.id, weight, labelOrder.customer.city) === 0 ? 'Gratis' : formatPrice(quoteShipment(c.id, weight, labelOrder.customer.city))}
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <div className="text-[11px] text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                El pago del comprador queda <strong>retenido por solooutlet</strong> hasta la confirmación de entrega. Vos solo despachás.
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => setLabelOrder(null)} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer">
+                  Cancelar
+                </button>
+                <button
+                  onClick={guard(() => {
+                    const shipment = createOrderShipment(labelOrder.id, labelCourier, weight);
+                    setLabelOrder(null);
+                    if (shipment) showToast(`✅ Etiqueta generada: ${shipment.trackingNumber} (${shipment.courierName})`);
+                  })}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-[#004AC6] hover:bg-[#1D4ED8] text-white text-xs font-bold cursor-pointer"
+                >
+                  Crear etiqueta
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
     </div>
   );

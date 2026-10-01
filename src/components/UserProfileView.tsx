@@ -25,6 +25,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { DEFAULT_LOCATIONS, POPULAR_LOCATION_SHORTCUTS } from '../data/locations';
+import { SHIPMENT_STATUS_LABEL, SHIPMENT_STATUS_FLOW } from '../utils/logistics';
 
 export const UserProfileView: React.FC = () => {
   const {
@@ -945,15 +946,23 @@ export const UserProfileView: React.FC = () => {
             <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 mb-6 flex items-center justify-between gap-3 text-xs">
               <div>
                 <div className="text-[10px] font-bold uppercase text-slate-400">Logística asignada</div>
-                <div className="font-bold text-slate-900 text-sm">Andreani Express · solooutlet</div>
+                <div className="font-bold text-slate-900 text-sm">{trackingOrder.shipment ? `${trackingOrder.shipment.courierName} · solooutlet` : 'Andreani Express · solooutlet'}</div>
                 <div className="text-[11px] text-slate-500 mt-0.5">
-                  Guía: <span className="font-mono font-bold text-blue-600">AND-{trackingOrder.orderNumber.replace('SO-', '')}-AR</span>
+                  Guía: <span className="font-mono font-bold text-blue-600">{trackingOrder.shipment?.trackingNumber ?? `AND-${trackingOrder.orderNumber.replace('SO-', '')}-AR`}</span>
                 </div>
+                {trackingOrder.shipment && (
+                  <div className="text-[11px] text-slate-500 mt-0.5">
+                    Estado: <strong className="text-slate-700">{SHIPMENT_STATUS_LABEL[trackingOrder.shipment.status]}</strong>
+                    {trackingOrder.shipment.status !== 'delivered' && (
+                      <> · Llega estimado: <strong>{new Date(trackingOrder.shipment.etaDate).toLocaleDateString('es-AR')}</strong></>
+                    )}
+                  </div>
+                )}
               </div>
 
               <button
                 type="button"
-                onClick={() => handleCopyTracking(`AND-${trackingOrder.orderNumber.replace('SO-', '')}-AR`)}
+                onClick={() => handleCopyTracking(trackingOrder.shipment?.trackingNumber ?? `AND-${trackingOrder.orderNumber.replace('SO-', '')}-AR`)}
                 className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
               >
                 {copiedTracking ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
@@ -1069,6 +1078,26 @@ export const UserProfileView: React.FC = () => {
               </div>
 
             </div>
+
+            {/* Historial real de eventos del courier (auto-logística) */}
+            {trackingOrder.shipment && trackingOrder.shipment.events.length > 0 && (
+              <div className="mb-6 p-4 rounded-2xl border border-slate-200 bg-white">
+                <div className="text-[10px] font-bold uppercase text-slate-400 mb-3">Historial del courier ({trackingOrder.shipment.courierName})</div>
+                <div className="space-y-2">
+                  {SHIPMENT_STATUS_FLOW.map((s) => {
+                    const ev = trackingOrder.shipment!.events.find((e) => e.status === s);
+                    if (!ev) return null;
+                    return (
+                      <div key={s} className="flex items-center gap-2 text-[11px]">
+                        <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span className="font-bold text-slate-800">{ev.label}</span>
+                        <span className="text-slate-400">{new Date(ev.date).toLocaleString('es-AR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Recipient Details & Help */}
             <div className="p-3.5 bg-blue-50/70 border border-blue-100 rounded-2xl text-xs space-y-1 mb-3">

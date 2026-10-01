@@ -149,6 +149,8 @@ export interface Order {
   sellerName?: string;
   payoutStatus?: PayoutStatus;
   payoutReleaseAt?: string;
+  /** Auto-logística: envío con etiqueta y tracking (modo demo). */
+  shipment?: import('./utils/logistics').Shipment;
 }
 
 export interface Seller {

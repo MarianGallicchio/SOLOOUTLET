@@ -6,6 +6,7 @@ import { DEFAULT_INTEGRATIONS } from '../utils/sellerWorkspace';
 import { load, persist, forget, isApiMode, API_URL } from '../data/db';
 import { auth, AuthSession } from '../data/auth';
 import { animatePop as animateToastIn } from '../utils/animations';
+import { Shipment, CourierId, generateShipmentLabel, advanceTracking, SHIPMENT_STATUS_LABEL } from '../utils/logistics';
 import {
   getCartCookie, saveCartCookie, hasConsentFor, pushRecentlyViewed,
   rememberUser, forgetRememberedUser, saveCatalogPrefs, getCatalogPrefs,
@@ -108,6 +109,10 @@ interface StoreContextType {
   clearNotifications: () => void;
   triggerPushNotification: (notif: Omit<PushNotification, 'id' | 'timestamp' | 'read'>) => void;
   updateOrderStatus: (orderId: string, newStatus: Order['status']) => void;
+
+  // ── Auto-logística (modo demo) ──
+  createOrderShipment: (orderId: string, courierId: CourierId, weightKg: number) => Shipment | null;
+  advanceOrderTracking: (orderId: string) => Shipment | null;
 
   // ── Comisiones y liquidaciones automáticas ──
   sellers: Seller[];
@@ -337,6 +342,51 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         newStatus,
       },
     });
+  };
+
+  // ── Auto-logística (modo demo) ──
+
+  const notifyShipmentEvent = (order: Order, shipment: Shipment) => {
+    const isDelivered = shipment.status === 'delivered';
+    triggerPushNotification({
+      type: 'order_status',
+      title: isDelivered
+        ? `✅ ¡Entregado! Pedido #${order.orderNumber}`
+        : `🚚 Tu pedido #${order.orderNumber} — ${SHIPMENT_STATUS_LABEL[shipment.status]}`,
+      body: isDelivered
+        ? `Entrega confirmada por ${shipment.courierName}. Si todo está bien, la venta queda cerrada.`
+        : `${shipment.courierName} · Tracking ${shipment.trackingNumber}. Llegada estimada: ${new Date(shipment.etaDate).toLocaleDateString('es-AR')}.`,
+      linkView: 'profile',
+      metadata: { orderId: order.id, newStatus: shipment.status },
+    });
+  };
+
+  const createOrderShipment = (orderId: string, courierId: CourierId, weightKg: number): Shipment | null => {
+    const order = orders.find((o) => o.id === orderId);
+    if (!order) return null;
+    const shipment = generateShipmentLabel({ courierId, weightKg, city: order.customer.city });
+    setOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, shipment } : o)),
+    );
+    notifyShipmentEvent(order, shipment);
+    return shipment;
+  };
+
+  const advanceOrderTracking = (orderId: string): Shipment | null => {
+    const order = orders.find((o) => o.id === orderId);
+    if (!order?.shipment) return null;
+    const updated = advanceTracking(order.shipment);
+    setOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, shipment: updated } : o)),
+    );
+    // Entrega confirmada → el pedido pasa a 'completado' y libera la liquidación
+    if (updated.status === 'delivered' && order.status !== 'completado') {
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, status: 'completado' as const } : o)),
+      );
+    }
+    notifyShipmentEvent(order, updated);
+    return updated;
   };
 
   const sendProductChatMessage = (productId: string, text: string) => {
@@ -1271,7 +1321,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         clearNotifications,
         triggerPushNotification,
         updateOrderStatus,
-        sellers,
+        createOrderShipment,
+        advanceOrderTracking,        sellers,
         payouts,
         registerSellerAccount,
         requestSellerPayout,
