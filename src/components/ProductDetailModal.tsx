@@ -458,8 +458,8 @@ export const ProductDetailModal: React.FC = () => {
             {related.items.length > 0 && (() => {
               const relatedItems = related.items;
               return (
-                <div className="px-6 sm:px-8 pb-6 sm:pb-8">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center justify-between gap-2">
+                <div className="md:col-span-12 px-6 sm:px-8 pb-6 sm:pb-8">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex flex-wrap items-center justify-between gap-2">
                     <span>También te puede interesar</span>
                     <span className="text-[10px] font-semibold normal-case tracking-normal text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
                       ✨ Sugerencias según lo que buscás
