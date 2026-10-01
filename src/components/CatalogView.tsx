@@ -25,6 +25,7 @@ import {
 import { ConditionType, CategoryType, Product } from '../types';
 import { isMerchant } from '../utils/sellerWorkspace';
 import { hasConsentFor, saveCatalogPrefs, getCatalogPrefs } from '../utils/cookies';
+import { animateGridIn } from '../utils/animations';
 
 export type SortOptionType = 'recommended' | 'price-asc' | 'price-desc' | 'newest' | 'discount';
 
@@ -173,6 +174,7 @@ export const CatalogView: React.FC = () => {
   const [sortOption, setSortOption] = useState<SortOptionType>('recommended');
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState<boolean>(false);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
 
   const [onlyInStock, setOnlyInStock] = useState<boolean>(false);
   const [selectedTagFilter, setSelectedTagFilter] = useState<string | null>(null);
@@ -1023,7 +1025,7 @@ export const CatalogView: React.FC = () => {
         {/* PRODUCTS GRID AREA */}
         <div className="flex-1 min-w-0 w-full">
           {filteredProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5" ref={(el) => { gridRef.current = el; animateGridIn('.group', el, { delay: 50 }); }}>
               {filteredProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}

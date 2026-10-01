@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { animateModalIn, animateGridIn } from '../utils/animations';
 import { useStore } from '../context/StoreContext';
 import { formatPrice, getConditionBadgeStyle, getGradeForCondition, getGradeChipStyle } from '../utils/formatters';
 import {
@@ -22,6 +23,16 @@ import { getRecommendations } from '../utils/recommendations';
 export const ProductDetailModal: React.FC = () => {
   const { selectedProductModal, closeProductModal, addToCart, setIsCheckoutOpen, addReview, toggleWishlist, isInWishlist, products, openProductModal } = useStore();
   const [quantity, setQuantity] = useState(1);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Entrada con spring + stagger de la sección de sugerencias
+  useEffect(() => {
+    animateModalIn(modalRef.current);
+    const t = setTimeout(() => {
+      animateGridIn('.grid.grid-cols-2', modalRef.current, { delay: 60, y: 14 });
+    }, 250);
+    return () => clearTimeout(t);
+  }, []);
   const [btnFeedback, setBtnFeedback] = useState(false);
   const [activeTab, setActiveTab] = useState<'info' | 'reviews'>('info');
 
@@ -107,7 +118,7 @@ export const ProductDetailModal: React.FC = () => {
       />
 
       {/* Modal Dialog */}
-      <div className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-200 my-6 border border-slate-200">
+      <div ref={modalRef} className="modal-dialog relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden z-10 my-6 border border-slate-200">
         
         {/* Header / Actions */}
         <div className="absolute top-4 right-4 z-20 flex items-center gap-2">

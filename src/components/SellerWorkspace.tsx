@@ -5,6 +5,17 @@ import { AuthSession } from '../data/auth';
 import { formatPrice } from '../utils/formatters';
 import { canAccessModule, roleLabel, SELLER_ROLES, INTEGRATION_CATALOG, WorkspaceModule, isPlatformOwner } from '../utils/sellerWorkspace';
 import { SellerRole, Order } from '../types';
+import { animateGridIn, animateCounter } from '../utils/animations';
+
+/** KPI con valor que cuenta de 0 al final al montar. */
+const AnimatedKpiValue: React.FC<{ value: number; format: (v: number) => string }> = ({ value, format }) => {
+  const ref = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    animateCounter(ref.current!, value, format);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+  return <div ref={ref} className="text-xl sm:text-2xl font-black text-slate-900 tabular-nums mt-1">{format(0)}</div>;
+};
 import {
   Store, Users, Megaphone, Plug, Wallet, Plus, Pause, Play,
   Trash2, Power, Lock, ArrowRight, BadgeCheck, Package,
@@ -381,30 +392,25 @@ export const SellerWorkspace: React.FC = () => {
             </div>
 
             {/* KPI Cards for Seller */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="kpi-grid grid grid-cols-2 lg:grid-cols-4 gap-4" ref={(el) => { animateGridIn(':scope > div', el, { delay: 70 }); }}>
               <div className="p-4 rounded-2xl bg-white/70 border border-slate-200/80 shadow-2xs">
                 <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Facturación Bruta</div>
-                <div className="text-xl sm:text-2xl font-black text-slate-900 tabular-nums mt-1">
-                  {formatPrice(myOrders.reduce((s, o) => s + o.total, 0))}
-                </div>
+                <AnimatedKpiValue value={myOrders.reduce((s, o) => s + o.total, 0)} format={formatPrice} />
                 <div className="text-[11px] text-emerald-600 font-bold mt-1">+14.2% este mes</div>
               </div>
 
               <div className="p-4 rounded-2xl bg-white/70 border border-slate-200/80 shadow-2xs">
                 <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Neto a Liquidar</div>
-                <div className="text-xl sm:text-2xl font-black text-slate-900 tabular-nums mt-1">
-                  {formatPrice(
-                    myOrders.reduce((s, o) => s + (o.settlement?.netPayout || Math.round(o.total * 0.88)), 0)
-                  )}
-                </div>
+                <AnimatedKpiValue
+                  value={myOrders.reduce((s, o) => s + (o.settlement?.netPayout || Math.round(o.total * 0.88)), 0)}
+                  format={formatPrice}
+                />
                 <div className="text-[11px] text-slate-500 mt-1">Deducida comisión de plataforma (10–15%)</div>
               </div>
 
               <div className="p-4 rounded-2xl bg-white/70 border border-slate-200/80 shadow-2xs">
                 <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Pedidos Vendidos</div>
-                <div className="text-xl sm:text-2xl font-black text-slate-900 tabular-nums mt-1">
-                  {myOrders.length}
-                </div>
+                <AnimatedKpiValue value={myOrders.length} format={(v) => String(Math.round(v))} />
                 <div className="text-[11px] text-slate-500 mt-1">
                   {myOrders.filter((o) => o.status === 'completado').length} entregados
                 </div>
@@ -412,13 +418,10 @@ export const SellerWorkspace: React.FC = () => {
 
               <div className="p-4 rounded-2xl bg-white/70 border border-slate-200/80 shadow-2xs">
                 <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Ticket Promedio</div>
-                <div className="text-xl sm:text-2xl font-black text-slate-900 tabular-nums mt-1">
-                  {formatPrice(
-                    myOrders.length > 0
-                      ? Math.round(myOrders.reduce((s, o) => s + o.total, 0) / myOrders.length)
-                      : 0
-                  )}
-                </div>
+                <AnimatedKpiValue
+                  value={myOrders.length > 0 ? Math.round(myOrders.reduce((s, o) => s + o.total, 0) / myOrders.length) : 0}
+                  format={formatPrice}
+                />
                 <div className="text-[11px] text-slate-500 mt-1">Por comprador</div>
               </div>
             </div>

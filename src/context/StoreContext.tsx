@@ -5,6 +5,7 @@ import { calcSettlement, releaseDateFrom, COMMISSION_CONFIG, resolveCoupon, reso
 import { DEFAULT_INTEGRATIONS } from '../utils/sellerWorkspace';
 import { load, persist, forget, isApiMode, API_URL } from '../data/db';
 import { auth, AuthSession } from '../data/auth';
+import { animatePop as animateToastIn } from '../utils/animations';
 import {
   getCartCookie, saveCartCookie, hasConsentFor, pushRecentlyViewed,
   rememberUser, forgetRememberedUser, saveCatalogPrefs, getCatalogPrefs,
@@ -1294,7 +1295,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       {/* Toast Notification Container */}
       {toastMessage && (
         <div className="fixed bottom-20 md:bottom-8 right-4 left-4 md:left-auto md:w-96 z-50 pointer-events-none">
-          <div className="bg-slate-900 text-white text-sm font-medium px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 border border-slate-700/80 animate-in fade-in slide-in-from-bottom-3 duration-200">
+          <div ref={(el) => { animateToastIn(el); }} className="bg-slate-900 text-white text-sm font-medium px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 border border-slate-700/80">
             <span className="flex-1">{toastMessage}</span>
           </div>
         </div>

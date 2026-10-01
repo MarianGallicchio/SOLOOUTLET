@@ -1,11 +1,23 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useStore } from '../context/StoreContext';
+import { animateIn } from '../utils/animations';
 import { formatPrice, getGradeForCondition, getGradeChipStyle } from '../utils/formatters';
 import { BadgeCheck, Camera, Truck, ShieldCheck, TrendingUp, ScrollText, Zap, ZoomIn, ShoppingCart } from 'lucide-react';
 
 export const Hero: React.FC = () => {
   const { setCurrentView, openProductModal, addToCart, products } = useStore();
   const auditProduct = products[0];
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    animateIn(sectionRef.current?.querySelector('.hero-badge'), { delay: 0 });
+    animateIn(sectionRef.current?.querySelector('h1'), { delay: 90, y: 22 });
+    animateIn(sectionRef.current?.querySelector('h1 + p'), { delay: 180, y: 22 });
+    animateIn(sectionRef.current?.querySelector('.hero-ctas'), { delay: 270, y: 18 });
+    sectionRef.current?.querySelectorAll('.hero-ctas ~ *').forEach((el, i) => {
+      animateIn(el as HTMLElement, { delay: 340 + i * 90 });
+    });
+  }, []);
   const grade = auditProduct ? getGradeForCondition(auditProduct.estado) : 'Grado B';
   const gradeStyle = getGradeChipStyle(grade);
 
@@ -14,13 +26,13 @@ export const Hero: React.FC = () => {
   };
 
   return (
-    <section className="bg-gradient-to-br from-blue-50 via-white to-orange-50 border-b border-blue-100">
+    <section ref={sectionRef} className="bg-gradient-to-br from-blue-50 via-white to-orange-50 border-b border-blue-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
 
           {/* Left */}
           <div className="lg:col-span-7 flex flex-col items-start">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-slate-200 text-xs font-bold text-slate-700 mb-5">
+            <div className="hero-badge inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-slate-200 text-xs font-bold text-slate-700 mb-5">
               <span className="w-2.5 h-2.5 rounded-full bg-orange-500 badge-pulse" />
               <span>142 unidades liquidadas en las últimas 3 horas</span>
               <TrendingUp className="w-3.5 h-3.5 text-orange-600" />
@@ -37,7 +49,7 @@ export const Hero: React.FC = () => {
               <span className="font-extrabold text-orange-600">75% de ahorro real.</span>
             </p>
 
-            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto mb-7">
+            <div className="hero-ctas flex flex-wrap items-center gap-3 w-full sm:w-auto mb-7">
               <button
                 onClick={() => setCurrentView('catalog')}
                 className="w-full sm:w-auto px-6 py-3.5 rounded-lg bg-orange-600 text-white font-bold text-sm sm:text-base hover:bg-orange-700 active:scale-[0.98] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
